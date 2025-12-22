@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>espacios — AI for WhatsApp & Instagram</title>
+  <meta name="description" content="espacios: AI automation for WhatsApp & Instagram. Integrate, deploy, and scale conversations." />
+
+  <style>
+    :root{
+      --page-bg:#E6E9ED;
+      --text:#0F0F10;
+      --muted:rgba(90,90,90,.9);
+      --accent:#B6FF3B;
+      --accent-glow:rgba(182,255,59,.5);
+      --font: system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter",sans-serif;
+
+      --glass-bg:rgba(255,255,255,.32);
+      --glass-border:rgba(255,255,255,.6);
+      --glass-blur:20px;
+
+      --shadow-xl: 0 40px 120px rgba(0,0,0,.12), 0 18px 60px rgba(0,0,0,.08);
+      --shadow-lg: 0 28px 80px rgba(0,0,0,.10), 0 12px 40px rgba(0,0,0,.07);
+      --shadow-md: 0 18px 44px rgba(0,0,0,.10), 0 8px 18px rgba(0,0,0,.06);
+
+      --radius: 34px;
+      --radius2: 26px;
+      --pill: 999px;
+
+      --ease: cubic-bezier(.22,1,.36,1);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--font);
+      background: var(--page-bg);
+      color: var(--text);
+      overflow-x:hidden;
+    }
+
+    /* Background orbs */
+    .bg{
+      position:fixed;
+      inset:0;
+      overflow:hidden;
+      pointer-events:none;
+      z-index:0;
+    }
+    .orb{
+      position:absolute;
+      width:560px;
+      height:560px;
+      border-radius:50%;
+      filter: blur(80px);
+      opacity:.45;
+      transform: translate3d(0,0,0);
+      animation: float 12s var(--ease) infinite;
+    }
+    .orb.one{left:-140px; top:-160px; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.85), rgba(147,197,253,.35), transparent 62%);}
+    .orb.two{right:-170px; top:40px; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.75), rgba(196,181,253,.35), transparent 62%); animation-duration: 14s;}
+    .orb.three{left:20%; bottom:-220px; width:680px; height:680px; background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.65), rgba(182,255,59,.20), transparent 62%); animation-duration: 16s;}
+
+    @keyframes float{
+      0%,100%{ transform: translateY(0) translateX(0) scale(1); }
+      50%{ transform: translateY(20px) translateX(16px) scale(1.03); }
+    }
+
+    /* Layout */
+    .wrap{
+      position:relative;
+      z-index:1;
+      width:min(1200px, calc(100% - 44px));
+      margin:0 auto;
+      padding:30px 0 70px;
+    }
+
+    /* Top nav */
+    .top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      padding:14px 16px;
+      border-radius: var(--pill);
+      background: rgba(255,255,255,.36);
+      border: 1px solid rgba(255,255,255,.62);
+      backdrop-filter: blur(var(--glass-blur));
+      box-shadow: var(--shadow-md);
+      opacity:0;
+      transform: translateY(-10px);
+      animation: fadeDown .8s var(--ease) .2s forwards;
+    }
+    @keyframes fadeDown{to{opacity:1; transform:none}}
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight: 800;
+      letter-spacing:-0.02em;
+    }
+    .brand .dot{
+      width:10px;height:10px;border-radius:50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 6px rgba(182,255,59,.16), 0 0 24px rgba(182,255,59,.25);
+    }
+    .nav{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:13px;
+      color: rgba(15,15,16,.60);
+      font-weight:700;
+    }
+    .nav a{
+      color:inherit;
+      text-decoration:none;
+      padding:10px 12px;
+      border-radius: var(--pill);
+      transition: background .25s var(--ease), transform .25s var(--ease);
+    }
+    .nav a:hover{
+      background: rgba(255,255,255,.45);
+      transform: translateY(-1px);
+    }
+
+    /* Hero */
+    .hero{
+      margin-top:28px;
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:56px;
+      align-items:center;
+    }
+
+    .hero-copy{
+      padding:10px 4px;
+    }
+
+    .kicker{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 14px;
+      border-radius: var(--pill);
+      background: rgba(255,255,255,.44);
+      border: 1px solid rgba(255,255,255,.68);
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(16px);
+      color: rgba(15,15,16,.68);
+      font-weight: 740;
+      font-size:13px;
+      opacity:0;
+      transform: translateY(10px);
+      animation: fadeUp .8s var(--ease) .6s forwards;
+    }
+    .badge-dot{
+      width:10px;height:10px;border-radius:50%;
+      background: rgba(15,15,16,.18);
+      box-shadow: 0 0 0 6px rgba(15,15,16,.06);
+    }
+
+    h1{
+      margin:16px 0 10px;
+      font-size: clamp(34px, 5vw, 56px);
+      line-height:1.02;
+      letter-spacing:-0.04em;
+      font-weight: 880;
+      opacity:0;
+      transform: translateY(14px);
+      animation: fadeUp .9s var(--ease) .8s forwards;
+    }
+
+    .sub{
+      margin:0;
+      font-size:16px;
+      line-height:1.5;
+      color: rgba(90,90,90,.92);
+      max-width: 520px;
+      opacity:0;
+      transform: translateY(14px);
+      animation: fadeUp .9s var(--ease) 1s forwards;
+    }
+
+    .cta-row{
+      margin-top:22px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+      opacity:0;
+      transform: translateY(14px);
+      animation: fadeUp .9s var(--ease) 1.2s forwards;
+    }
+
+    .btn-primary, .btn-secondary{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      padding:14px 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.68);
+      background: rgba(255,255,255,.44);
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(16px);
+      cursor:pointer;
+      font-weight: 820;
+      letter-spacing:-0.01em;
+      color: rgba(15,15,16,.82);
+      transition: transform .25s var(--ease), box-shadow .25s var(--ease), background .25s var(--ease);
+      text-decoration:none;
+      user-select:none;
+    }
+    .btn-primary{
+      background: rgba(182,255,59,.22);
+      border-color: rgba(182,255,59,.38);
+      box-shadow: 0 22px 56px rgba(182,255,59,.18), var(--shadow-md);
+    }
+    .btn-primary:hover{
+      transform: translateY(-2px);
+      box-shadow: 0 28px 80px rgba(182,255,59,.22), var(--shadow-lg);
+      background: rgba(182,255,59,.26);
+    }
+    .btn-secondary:hover{
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+      background: rgba(255,255,255,.52);
+    }
+    .btn-primary svg, .btn-secondary svg{width:18px;height:18px; fill: rgba(15,15,16,.70);}
+
+    @keyframes fadeUp{to{opacity:1; transform:none}}
+
+    /* Visual card area replaced by floating logo */
+    .hero-visual{
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      gap:14px;
+      min-height:460px;
+    }
+    .floating-logo{
+      width:112px;
+      height:112px;
+      border-radius:32px;
+      background: var(--glass-bg);
+      border:1px solid var(--glass-border);
+      box-shadow: var(--shadow-xl);
+      backdrop-filter: blur(16px);
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      transition: transform .35s var(--ease), box-shadow .35s var(--ease), background .35s var(--ease);
+      opacity:0;
+      transform: translateY(18px) scale(.96);
+      animation: visualCardIn .9s var(--ease) 2.4s forwards;
+      position:relative;
+      overflow:hidden;
+    }
+    .floating-logo::before{
+      content:"";
+      position:absolute;
+      inset:-30%;
+      background:
+        radial-gradient(circle at 35% 35%, rgba(255,255,255,.55), transparent 45%),
+        radial-gradient(circle at 60% 65%, rgba(182,255,59,.16), transparent 55%);
+      filter: blur(18px);
+      opacity:.65;
+      animation: sheenDrift 9s ease-in-out infinite;
+      pointer-events:none;
+    }
+    .floating-logo:hover{
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 48px 140px rgba(0,0,0,.14), 0 18px 54px rgba(0,0,0,.10);
+      background: rgba(255,255,255,.42);
+    }
+    .floating-logo svg{
+      width:64px;
+      height:64px;
+      position:relative;
+      z-index:1;
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,.12));
+    }
+    .floating-hint{
+      font-size:13px;
+      font-weight:650;
+      color: rgba(15,15,16,.62);
+      opacity:0;
+      transform: translateY(8px);
+      animation: fadeUp .7s var(--ease) 2.8s forwards;
+    }
+
+    @keyframes visualCardIn{
+      to{ opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes sheenDrift{
+      0%,100%{ transform: translateX(0) translateY(0); }
+      50%{ transform: translateX(18px) translateY(10px); }
+    }
+
+    /* ===== Agent Overlay ===== */
+    .agent-overlay{
+      position:fixed;
+      inset:0;
+      z-index:120;
+      background: rgba(230,233,237,.92);
+      backdrop-filter: blur(20px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      opacity:0;
+      visibility:hidden;
+      transition: opacity .4s var(--ease), visibility .4s;
+    }
+    .agent-overlay.is-open{ opacity:1; visibility:visible; }
+
+    .agent-panel{
+      width:min(980px, calc(100% - 40px));
+      max-height: min(78vh, 740px);
+      overflow:auto;
+      overscroll-behavior: contain;
+      border-radius:32px;
+      background: linear-gradient(145deg, rgba(255,255,255,.55), rgba(255,255,255,.28));
+      border:1px solid rgba(255,255,255,.7);
+      box-shadow: var(--shadow-xl);
+      backdrop-filter: blur(var(--glass-blur));
+      position:relative;
+      padding:28px;
+    }
+    .agent-panel::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: linear-gradient(135deg,
+        rgba(255,255,255,.45) 0%,
+        rgba(255,255,255,.10) 35%,
+        rgba(147,197,253,.08) 55%,
+        rgba(196,181,253,.08) 75%,
+        rgba(255,255,255,.28) 100%
+      );
+      pointer-events:none;
+      opacity:.85;
+      animation: holoShift 6s ease-in-out infinite;
+    }
+    .agent-panel > *{ position:relative; z-index:2; }
+
+    @keyframes holoShift{
+      0%,100%{ filter: hue-rotate(0deg); opacity:.85; }
+      50%{ filter: hue-rotate(10deg); opacity:.92; }
+    }
+
+    .agent-close{
+      position:absolute;
+      top:16px;
+      right:16px;
+      width:46px;
+      height:46px;
+      border-radius:16px;
+      background: rgba(255,255,255,.55);
+      border:1px solid rgba(255,255,255,.75);
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(12px);
+      cursor:pointer;
+      display:grid;
+      place-items:center;
+      transition: all .25s var(--ease);
+      z-index:5;
+    }
+    .agent-close:hover{ transform: scale(1.05); background: rgba(255,255,255,.72); }
+    .agent-close svg{ width:20px; height:20px; stroke: rgba(15,15,16,.7); stroke-width:2.5; fill:none; }
+
+    .agent-head{ display:flex; flex-direction:column; gap:12px; padding:8px 8px 20px; }
+    .agent-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 14px;
+      border-radius:999px;
+      background: rgba(255,255,255,.46);
+      border:1px solid rgba(255,255,255,.65);
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(14px);
+      font-size:13px;
+      font-weight:650;
+      color:rgba(15,15,16,.68);
+      width:fit-content;
+    }
+    .agent-title{ font-size:28px; font-weight:820; letter-spacing:-0.03em; color: rgba(15,15,16,.92); }
+    .agent-sub{ font-size:14px; line-height:1.5; color: rgba(90,90,90,.92); max-width:520px; }
+
+    .agent-grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap:16px;
+      padding:8px;
+    }
+    .agent-card{
+      text-align:left;
+      border-radius:24px;
+      padding:18px;
+      background: rgba(255,255,255,.40);
+      border:1px solid rgba(255,255,255,.65);
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(14px);
+      cursor:pointer;
+      transition: transform .25s var(--ease), box-shadow .25s var(--ease), background .25s var(--ease), border-color .25s var(--ease);
+    }
+    .agent-card:hover{ transform: translateY(-2px); box-shadow: var(--shadow-lg); background: rgba(255,255,255,.52); }
+    .agent-card.is-selected{
+      border-color: rgba(182,255,59,.55);
+      box-shadow: 0 22px 56px rgba(182,255,59,.16), var(--shadow-lg);
+    }
+    .agent-card-top{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+    .agent-pill{
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      color: rgba(15,15,16,.78);
+      background: rgba(182,255,59,.22);
+      border:1px solid rgba(182,255,59,.38);
+      box-shadow: 0 14px 34px rgba(182,255,59,.12);
+      width:fit-content;
+    }
+    .agent-crm{ font-size:12px; font-weight:700; color: rgba(15,15,16,.58); }
+    .agent-card-name{ font-size:16px; font-weight:820; letter-spacing:-0.02em; color: rgba(15,15,16,.92); margin-bottom:6px; }
+    .agent-card-desc{ font-size:13px; line-height:1.45; color: rgba(15,15,16,.62); }
+
+    .agent-actions{
+      display:flex;
+      gap:12px;
+      padding:20px 8px 8px;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+    }
+
+    /* ===== Simulation Overlay (Embedded) ===== */
+    .sim-overlay{
+      position:fixed;
+      inset:0;
+      z-index:130;
+      background: rgba(230,233,237,.92);
+      backdrop-filter: blur(20px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      opacity:0;
+      visibility:hidden;
+      transition: opacity .4s var(--ease), visibility .4s;
+    }
+    .sim-overlay.is-open{ opacity:1; visibility:visible; }
+
+    .sim-close{
+      position:fixed;
+      top:18px;
+      right:18px;
+      width:54px;
+      height:54px;
+      border-radius:18px;
+      background: rgba(255,255,255,.55);
+      border:1px solid rgba(255,255,255,.75);
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(12px);
+      cursor:pointer;
+      display:grid;
+      place-items:center;
+      transition: all .25s var(--ease);
+      z-index:140;
+    }
+    .sim-close:hover{ transform: scale(1.06); background: rgba(255,255,255,.72); }
+    .sim-close svg{ width:22px; height:22px; stroke: rgba(15,15,16,.7); stroke-width:2.5; fill:none; }
+
+    .sim-shell{
+      width:min(1200px, calc(100% - 40px));
+      border-radius:36px;
+      background: linear-gradient(145deg, rgba(255,255,255,.55), rgba(255,255,255,.22));
+      border:1px solid rgba(255,255,255,.72);
+      box-shadow: var(--shadow-xl);
+      backdrop-filter: blur(var(--glass-blur));
+      position:relative;
+      overflow:hidden;
+      padding:26px;
+    }
+    .sim-shell::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: linear-gradient(135deg,
+        rgba(255,255,255,.45) 0%,
+        rgba(255,255,255,.10) 30%,
+        rgba(147,197,253,.08) 55%,
+        rgba(196,181,253,.08) 75%,
+        rgba(255,255,255,.28) 100%
+      );
+      pointer-events:none;
+      opacity:.85;
+      animation: holoShift 6s ease-in-out infinite;
+    }
+    .sim-shell > *{ position:relative; z-index:2; }
+
+    .sim-head{ padding:6px 6px 18px; display:flex; flex-direction:column; gap:10px; }
+    .sim-kicker{
+      display:inline-flex; align-items:center; gap:10px;
+      padding:10px 14px; border-radius:999px;
+      background: rgba(255,255,255,.46);
+      border:1px solid rgba(255,255,255,.65);
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(14px);
+      font-size:13px; font-weight:750; color:rgba(15,15,16,.68);
+      width:fit-content;
+    }
+    .sim-title{ font-size:28px; font-weight:850; letter-spacing:-0.03em; color: rgba(15,15,16,.92); }
+    .sim-sub{ font-size:14px; line-height:1.5; color: rgba(90,90,90,.92); max-width:620px; }
+
+    .sim-grid{
+      display:grid;
+      grid-template-columns: 1fr 110px 1fr;
+      gap:16px;
+      align-items:stretch;
+      padding:8px;
+    }
+    .sim-card{
+      border-radius:28px;
+      background: rgba(255,255,255,.40);
+      border:1px solid rgba(255,255,255,.65);
+      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(14px);
+      overflow:hidden;
+      min-height:520px;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .sim-transfer{ display:flex; align-items:center; justify-content:center; padding:10px 0; }
+    .transfer-pill{
+      width:100%; max-width:110px;
+      border-radius:999px; padding:12px 12px;
+      background: rgba(255,255,255,.36);
+      border:1px solid rgba(255,255,255,.62);
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(14px);
+      display:flex; flex-direction:column; align-items:center; gap:10px;
+      color: rgba(15,15,16,.62);
+      font-weight:750; font-size:12px;
+    }
+    .transfer-arrows{ display:flex; flex-direction:column; gap:10px; width:100%; }
+    .arrow{ height:34px; border-radius:999px; background: rgba(15,15,16,.06); position:relative; overflow:hidden; }
+    .arrow::before{
+      content:""; position:absolute; inset:0;
+      background: linear-gradient(90deg, transparent 0%, rgba(182,255,59,.55) 45%, transparent 100%);
+      transform: translateX(-120%); opacity:0;
+    }
+    .arrow.is-glowing{ background: rgba(182,255,59,.10); box-shadow: 0 18px 44px rgba(182,255,59,.18); }
+    .arrow.is-glowing::before{ opacity:1; animation: arrowSweep .85s var(--ease) forwards; }
+    @keyframes arrowSweep{ to{ transform: translateX(120%); } }
+
+    .wa-top{
+      padding:14px; display:flex; align-items:center; justify-content:space-between; gap:12px;
+      border-bottom:1px solid rgba(15,15,16,.06);
+      background: rgba(255,255,255,.22);
+    }
+    .wa-avatar{
+      width:38px;height:38px;border-radius:14px;
+      background: rgba(255,255,255,.55);
+      border:1px solid rgba(255,255,255,.7);
+      box-shadow: 0 12px 30px rgba(0,0,0,.08);
+    }
+    .wa-meta{ flex:1; display:flex; flex-direction:column; gap:4px; }
+    .wa-name{ font-weight:850; letter-spacing:-0.02em; }
+    .wa-status{ font-size:12px; color: rgba(15,15,16,.55); }
+    .wa-icons{ display:flex; align-items:center; gap:6px; }
+    .wa-dot{ width:6px;height:6px;border-radius:99px;background: rgba(15,15,16,.22); }
+
+    .wa-body{
+      padding:14px; display:flex; flex-direction:column; gap:10px; overflow:auto; flex:1;
+      background:
+        radial-gradient(500px 240px at 20% 0%, rgba(255,255,255,.22), transparent 60%),
+        radial-gradient(500px 240px at 80% 100%, rgba(255,255,255,.20), transparent 60%),
+        rgba(255,255,255,.10);
+    }
+    .wa-bubble{
+      max-width:86%;
+      padding:10px 12px;
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.62);
+      box-shadow: 0 14px 34px rgba(0,0,0,.08);
+      backdrop-filter: blur(12px);
+      animation: bubbleIn .45s var(--ease) both;
+    }
+    @keyframes bubbleIn{ from{opacity:0; transform: translateY(8px) scale(.98);} to{opacity:1; transform:none;} }
+    .wa-bubble.ai{ align-self:flex-start; background: rgba(255,255,255,.46); }
+    .wa-bubble.user{ align-self:flex-end; background: rgba(182,255,59,.14); border-color: rgba(182,255,59,.30); }
+    .wa-text{ font-size:13px; line-height:1.45; color: rgba(15,15,16,.86); }
+    .wa-time{ margin-top:6px; font-size:11px; color: rgba(15,15,16,.50); text-align:right; }
+
+    .wa-input{
+      padding:12px; display:flex; align-items:center; gap:10px;
+      border-top:1px solid rgba(15,15,16,.06);
+      background: rgba(255,255,255,.22);
+    }
+    .wa-chip{
+      padding:10px 12px; border-radius:999px;
+      background: rgba(255,255,255,.45);
+      border:1px solid rgba(255,255,255,.65);
+      font-size:12px; font-weight:750; color: rgba(15,15,16,.62);
+      box-shadow: var(--shadow-md);
+    }
+    .wa-compose{
+      flex:1; border-radius:999px;
+      background: rgba(255,255,255,.46);
+      border:1px solid rgba(255,255,255,.70);
+      padding:12px 14px;
+      display:flex; align-items:center; justify-content:space-between;
+      box-shadow: var(--shadow-md);
+    }
+    .wa-placeholder{ font-size:13px; color: rgba(15,15,16,.45); }
+    .wa-typing{ display:none; align-items:center; gap:4px; }
+    .wa-typing span{
+      width:6px;height:6px;border-radius:99px;background: rgba(15,15,16,.35);
+      animation: dotBounce 1s ease-in-out infinite;
+    }
+    .wa-typing span:nth-child(2){ animation-delay:.12s; }
+    .wa-typing span:nth-child(3){ animation-delay:.24s; }
+    @keyframes dotBounce{ 0%,100%{transform:none;opacity:.55;} 50%{transform: translateY(-4px);opacity:.95;} }
+
+    .wa-send{
+      width:44px;height:44px;border-radius:16px;
+      display:grid;place-items:center;
+      background: rgba(255,255,255,.45);
+      border:1px solid rgba(255,255,255,.70);
+      box-shadow: var(--shadow-md);
+      cursor:pointer;
+      transition: transform .25s var(--ease), box-shadow .25s var(--ease), background .25s var(--ease);
+    }
+    .wa-send:hover{ transform: translateY(-1px); box-shadow: var(--shadow-lg); background: rgba(255,255,255,.58); }
+    .wa-send svg{ width:18px;height:18px; fill: rgba(15,15,16,.65); }
+
+    .crm-top{
+      padding:16px; display:flex; align-items:center; justify-content:space-between; gap:12px;
+      border-bottom:1px solid rgba(15,15,16,.06);
+      background: rgba(255,255,255,.22);
+    }
+    .crm-brand{ display:flex; align-items:center; gap:12px; }
+    .crm-logo{
+      width:38px;height:38px;border-radius:14px;
+      background: rgba(255,255,255,.55);
+      border:1px solid rgba(255,255,255,.7);
+      box-shadow: 0 12px 30px rgba(0,0,0,.08);
+      position:relative; overflow:hidden;
+    }
+    .crm-logo::after{
+      content:""; position:absolute; inset:-50%;
+      background: radial-gradient(closest-side at 40% 35%, rgba(182,255,59,.22), transparent 60%);
+      filter: blur(16px); opacity:.9;
+      animation: logoGlowPulse 3s ease-in-out infinite;
+      pointer-events:none;
+    }
+    @keyframes logoGlowPulse{
+      0%,100%{ transform: translate(0,0); opacity:.75; }
+      50%{ transform: translate(10px,6px); opacity:.95; }
+    }
+
+    .crm-name{ font-weight:850; letter-spacing:-0.02em; }
+    .crm-sub{ font-size:12px; color: rgba(15,15,16,.55); }
+    .crm-badge{
+      padding:10px 12px; border-radius:999px;
+      background: rgba(182,255,59,.18);
+      border:1px solid rgba(182,255,59,.36);
+      font-weight:800; font-size:12px;
+      color: rgba(15,15,16,.72);
+      box-shadow: 0 16px 34px rgba(182,255,59,.10);
+    }
+    .crm-body{ padding:14px 14px 16px; display:flex; flex-direction:column; gap:12px; overflow:auto; flex:1; }
+    .crm-section-title{
+      font-size:12px; font-weight:900; letter-spacing:0.08em; text-transform:uppercase;
+      color: rgba(15,15,16,.55); padding:0 2px;
+    }
+    .crm-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .crm-field{
+      border-radius:18px; padding:12px;
+      background: rgba(255,255,255,.46);
+      border:1px solid rgba(255,255,255,.70);
+      box-shadow: var(--shadow-md);
+      transition: box-shadow .3s var(--ease), transform .3s var(--ease), border-color .3s var(--ease);
+    }
+    .crm-field.is-hot{
+      border-color: rgba(182,255,59,.50);
+      box-shadow: 0 22px 56px rgba(182,255,59,.16), var(--shadow-lg);
+      transform: translateY(-1px);
+    }
+    .crm-label{ font-size:11px; font-weight:900; letter-spacing:0.06em; text-transform:uppercase; color: rgba(15,15,16,.50); }
+    .crm-value{ margin-top:6px; font-size:13px; font-weight:800; color: rgba(15,15,16,.84); }
+    .crm-notes{
+      border-radius:18px; padding:12px;
+      background: rgba(255,255,255,.38);
+      border:1px solid rgba(255,255,255,.65);
+      box-shadow: var(--shadow-md);
+      font-size:13px; line-height:1.45; color: rgba(15,15,16,.70);
+      min-height:84px;
+    }
+    .crm-foot{
+      padding:12px; display:flex; align-items:center; justify-content:space-between; gap:12px;
+      border-top:1px solid rgba(15,15,16,.06);
+      background: rgba(255,255,255,.22);
+    }
+    .crm-mini{ display:flex; align-items:center; gap:10px; color: rgba(15,15,16,.62); font-weight:750; font-size:12px; }
+    .crm-dot{
+      width:10px;height:10px;border-radius:99px;background: rgba(15,15,16,.18);
+      box-shadow: 0 0 0 4px rgba(15,15,16,.06);
+      transition: background .25s var(--ease), box-shadow .25s var(--ease);
+    }
+    .crm-dot.is-live{
+      background: var(--accent);
+      box-shadow: 0 0 0 6px rgba(182,255,59,.14), 0 0 18px rgba(182,255,59,.28);
+    }
+    .crm-action{
+      padding:12px 14px; border-radius:16px;
+      background: rgba(255,255,255,.46);
+      border:1px solid rgba(255,255,255,.70);
+      box-shadow: var(--shadow-md);
+      font-weight:850; cursor:pointer;
+      transition: transform .25s var(--ease), box-shadow .25s var(--ease), background .25s var(--ease);
+      color: rgba(15,15,16,.78);
+    }
+    .crm-action:hover{ transform: translateY(-1px); box-shadow: var(--shadow-lg); background: rgba(255,255,255,.58); }
+
+    @media (max-width: 980px){
+      .hero{ grid-template-columns: 1fr; }
+      .sim-grid{ grid-template-columns: 1fr; }
+      .sim-transfer{ display:none; }
+      .sim-card{ min-height:unset; }
+      .agent-actions{ justify-content:stretch; }
+      .agent-actions .btn-primary, .agent-actions .btn-secondary{ width:100%; }
+      .top{ gap:10px; }
+      .nav{ display:none; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg" aria-hidden="true">
+    <div class="orb one"></div>
+    <div class="orb two"></div>
+    <div class="orb three"></div>
+  </div>
+
+  <main class="wrap">
+    <header class="top">
+      <div class="brand">
+        <span class="dot" aria-hidden="true"></span>
+        espacios
+      </div>
+      <nav class="nav" aria-label="Primary">
+        <a href="#sim">Simulations</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </header>
+
+    <section class="hero" id="sim">
+      <div class="hero-copy">
+        <div class="kicker">
+          <span class="badge-dot" aria-hidden="true"></span>
+          simulation-ready workflows
+        </div>
+
+        <h1>espacios — your first step<br/>to AI integration.</h1>
+
+        <p class="sub">
+          Calm AI agents for WhatsApp & Instagram — qualify, respond, and sync to your CRM with clean handoff moments.
+        </p>
+
+        <div class="cta-row">
+          <a class="btn-primary" href="https://espacios.me/price-calc" target="_blank" rel="noopener">
+            Open Pricing
+            <svg viewBox="0 0 24 24"><path d="M12 5l7 7-7 7M5 12h14"/></svg>
+          </a>
+          <button class="btn-secondary" type="button" id="openAgentsCta">
+            AI Magic
+            <svg viewBox="0 0 24 24"><path d="M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Visual -->
+      <div class="hero-visual" aria-label="Espacios logo launcher">
+        <button class="floating-logo" id="openAgents" aria-label="Open agent selection">
+          <svg viewBox="0 0 800 800" role="img" aria-label="espacios">
+            <defs>
+              <linearGradient id="floatingLogoGradient" x1="0%" x2="100%" y1="0%" y2="100%">
+                <stop offset="0%" stop-color="#B6FF3B" />
+                <stop offset="100%" stop-color="#8EE62E" />
+              </linearGradient>
+            </defs>
+            <path fill="url(#floatingLogoGradient)" d="M657.8 186.2C596.5 121.5 504.7 80 400 80S203.5 121.5 142.2 186.2C83 248.7 57 332.9 57 414.2c0 64.4 25 124 70.4 169.3-8.3 33.8-27.8 64.6-27.9 64.9a10 10 0 0 0 10.6 14c51.4-6.4 90.2-21.5 117.9-36.2 49.5 21.3 106.1 32.8 171.9 32.8 104.7 0 196.5-41.5 257.8-106.2 59.2-62.5 85.2-146.7 85.2-228 0-81.3-26-165.5-85.2-228z"/>
+          </svg>
+        </button>
+        <div class="floating-hint" aria-hidden="true">Tap to choose an agent</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- AGENT OVERLAY -->
+  <div class="agent-overlay" id="agentOverlay" aria-hidden="true">
+    <div class="agent-panel" role="dialog" aria-modal="true" aria-label="Choose an agent">
+      <button class="agent-close" id="agentClose" aria-label="Close">
+        <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+
+      <div class="agent-head">
+        <div class="agent-badge"><span class="badge-dot"></span>Choose an agent</div>
+        <div class="agent-title">AI Magic</div>
+        <div class="agent-sub">Pick a role to preview the conversation + CRM handoff.</div>
+      </div>
+
+      <div class="agent-grid" id="agentGrid">
+        <button class="agent-card is-selected" type="button" data-agent="Sales Agent" data-crm="HubSpot">
+          <div class="agent-card-top">
+            <div class="agent-pill">Sales</div>
+            <div class="agent-crm">CRM: HubSpot</div>
+          </div>
+          <div class="agent-card-name">Sales Agent</div>
+          <div class="agent-card-desc">Qualify, follow up, book calls.</div>
+        </button>
+
+        <button class="agent-card" type="button" data-agent="Leasing Agent" data-crm="Zoho CRM">
+          <div class="agent-card-top">
+            <div class="agent-pill">Leasing</div>
+            <div class="agent-crm">CRM: Zoho CRM</div>
+          </div>
+          <div class="agent-card-name">Leasing Agent</div>
+          <div class="agent-card-desc">Handle listings, viewings, tenant Q&A.</div>
+        </button>
+
+        <button class="agent-card" type="button" data-agent="Customer Support" data-crm="Zendesk">
+          <div class="agent-card-top">
+            <div class="agent-pill">Support</div>
+            <div class="agent-crm">CRM: Zendesk</div>
+          </div>
+          <div class="agent-card-name">Customer Support</div>
+          <div class="agent-card-desc">Resolve issues, capture context, escalate.</div>
+        </button>
+
+        <button class="agent-card" type="button" data-agent="Restaurant Orders" data-crm="Toast">
+          <div class="agent-card-top">
+            <div class="agent-pill">Restaurant</div>
+            <div class="agent-crm">CRM: Toast</div>
+          </div>
+          <div class="agent-card-name">Restaurant Orders</div>
+          <div class="agent-card-desc">Take orders, confirm pickup/delivery, upsell.</div>
+        </button>
+
+        <button class="agent-card" type="button" data-agent="Clinic Reception" data-crm="Pipedrive">
+          <div class="agent-card-top">
+            <div class="agent-pill">Clinic</div>
+            <div class="agent-crm">CRM: Pipedrive</div>
+          </div>
+          <div class="agent-card-name">Clinic Reception</div>
+          <div class="agent-card-desc">Appointments, FAQs, patient intake.</div>
+        </button>
+
+        <button class="agent-card" type="button" data-agent="Property Management" data-crm="Monday.com">
+          <div class="agent-card-top">
+            <div class="agent-pill">PM</div>
+            <div class="agent-crm">CRM: Monday.com</div>
+          </div>
+          <div class="agent-card-name">Property Management</div>
+          <div class="agent-card-desc">Maintenance tickets, updates, vendor routing.</div>
+        </button>
+
+        <button class="agent-card" type="button" data-agent="Mortgage Advisor" data-crm="Salesforce">
+          <div class="agent-card-top">
+            <div class="agent-pill">Mortgage</div>
+            <div class="agent-crm">CRM: Salesforce</div>
+          </div>
+          <div class="agent-card-name">Mortgage Advisor</div>
+          <div class="agent-card-desc">Pre-qualify, documents, callback scheduling.</div>
+        </button>
+
+        <button class="agent-card" type="button" data-agent="Events RSVP" data-crm="HubSpot">
+          <div class="agent-card-top">
+            <div class="agent-pill">Events</div>
+            <div class="agent-crm">CRM: HubSpot</div>
+          </div>
+          <div class="agent-card-name">Events RSVP</div>
+          <div class="agent-card-desc">RSVP flow, guest count, follow-ups.</div>
+        </button>
+      </div>
+
+      <div class="agent-actions">
+        <button class="btn-primary" id="launchSimulationFromAgents">
+          Try the Simulation
+        </button>
+        <button class="btn-secondary" id="agentSecondary">
+          Close
+          <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIMULATION OVERLAY -->
+  <div class="sim-overlay" id="simOverlay" aria-hidden="true">
+    <button class="sim-close" id="simClose" aria-label="Close simulation">
+      <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+
+    <div class="sim-shell" role="dialog" aria-modal="true" aria-label="Simulation">
+      <div class="sim-head">
+        <div class="sim-kicker"><span class="badge-dot"></span>simulation</div>
+        <div class="sim-title">WhatsApp → AI → CRM</div>
+        <div class="sim-sub">Watch the chat qualify the lead while the CRM updates in real time.</div>
+      </div>
+
+      <div class="sim-grid">
+        <section class="sim-card chat-card" aria-label="WhatsApp chat simulation">
+          <header class="wa-top">
+            <div class="wa-avatar" aria-hidden="true"></div>
+            <div class="wa-meta">
+              <div class="wa-name" id="waName">Espacios AI</div>
+              <div class="wa-status" id="waStatus">online</div>
+            </div>
+            <div class="wa-icons" aria-hidden="true">
+              <div class="wa-dot"></div><div class="wa-dot"></div><div class="wa-dot"></div>
+            </div>
+          </header>
+
+          <div class="wa-body" id="waBody" aria-live="polite"></div>
+
+          <footer class="wa-input">
+            <div class="wa-chip" id="waChip">Message</div>
+            <div class="wa-compose">
+              <div class="wa-placeholder" id="waPlaceholder">Type a message</div>
+              <div class="wa-typing" id="waTyping" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+            <button class="wa-send" type="button" aria-label="Send">
+              <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+            </button>
+          </footer>
+        </section>
+
+        <div class="sim-transfer" aria-hidden="true">
+          <div class="transfer-pill">
+            <span>data</span>
+            <div class="transfer-arrows">
+              <div class="arrow" id="arrow1"></div>
+              <div class="arrow" id="arrow2"></div>
+              <div class="arrow" id="arrow3"></div>
+            </div>
+          </div>
+        </div>
+
+        <section class="sim-card crm-card" aria-label="CRM updates">
+          <header class="crm-top">
+            <div class="crm-brand">
+              <div class="crm-logo" aria-hidden="true"></div>
+              <div>
+                <div class="crm-name" id="crmName">HubSpot</div>
+                <div class="crm-sub" id="crmSub">Lead record</div>
+              </div>
+            </div>
+            <div class="crm-badge" id="crmBadge">Syncing</div>
+          </header>
+
+          <div class="crm-body">
+            <div class="crm-section-title">Contact</div>
+
+            <div class="crm-grid">
+              <div class="crm-field" data-key="name">
+                <div class="crm-label">Name</div>
+                <div class="crm-value" id="crm_name">—</div>
+              </div>
+              <div class="crm-field" data-key="phone">
+                <div class="crm-label">Phone</div>
+                <div class="crm-value" id="crm_phone">—</div>
+              </div>
+              <div class="crm-field" data-key="budget">
+                <div class="crm-label">Budget</div>
+                <div class="crm-value" id="crm_budget">—</div>
+              </div>
+              <div class="crm-field" data-key="bedrooms">
+                <div class="crm-label">Bedrooms</div>
+                <div class="crm-value" id="crm_bedrooms">—</div>
+              </div>
+              <div class="crm-field" data-key="timeline">
+                <div class="crm-label">Timeline</div>
+                <div class="crm-value" id="crm_timeline">—</div>
+              </div>
+              <div class="crm-field" data-key="status">
+                <div class="crm-label">Qualification</div>
+                <div class="crm-value" id="crm_status">—</div>
+              </div>
+            </div>
+
+            <div class="crm-section-title">Notes</div>
+            <div class="crm-notes" id="crm_notes">Waiting for the first message…</div>
+          </div>
+
+          <footer class="crm-foot">
+            <div class="crm-mini">
+              <div class="crm-dot" id="crmDot"></div>
+              <div class="crm-mini-text" id="crmMiniText">Listening on WhatsApp</div>
+            </div>
+            <button class="crm-action" type="button" id="simRestart">Restart</button>
+          </footer>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Small haptic helper (mobile)
+    function haptic(pattern){
+      try{
+        if(navigator.vibrate) navigator.vibrate(pattern);
+      }catch(e){}
+    }
+
+    // Ensure overlay consts exist
+    const simOverlay = document.getElementById('simOverlay');
+    const simClose = document.getElementById('simClose');
+
+    // Agent overlay wiring
+    const agentOverlay = document.getElementById('agentOverlay');
+    const openAgents = document.getElementById('openAgents');
+    const openAgentsCta = document.getElementById('openAgentsCta');
+    const agentClose = document.getElementById('agentClose');
+    const agentSecondary = document.getElementById('agentSecondary');
+
+    let selectedAgent = { name: 'Sales Agent', crm: 'HubSpot' };
+
+    function openAgentOverlay(){
+      haptic([10, 20, 10]);
+      agentOverlay.classList.add('is-open');
+      agentOverlay.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeAgentOverlay(){
+      haptic([8]);
+      agentOverlay.classList.remove('is-open');
+      agentOverlay.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    openAgents?.addEventListener('click', openAgentOverlay);
+    openAgentsCta?.addEventListener('click', openAgentOverlay);
+    agentClose?.addEventListener('click', closeAgentOverlay);
+    agentSecondary?.addEventListener('click', closeAgentOverlay);
+    agentOverlay?.addEventListener('click', (e) => { if(e.target === agentOverlay) closeAgentOverlay(); });
+
+    document.querySelectorAll('.agent-card').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const name = btn.getAttribute('data-agent') || 'Agent';
+        const crm = btn.getAttribute('data-crm') || 'CRM';
+        selectedAgent = { name, crm };
+        haptic([8, 18, 8]);
+        document.querySelectorAll('.agent-card').forEach(b => b.classList.remove('is-selected'));
+        btn.classList.add('is-selected');
+
+        const crmName = document.getElementById('crmName');
+        if(crmName) crmName.textContent = crm;
+        const waName = document.getElementById('waName');
+        if(waName) waName.textContent = name;
+      });
+    });
+
+    // Embedded simulation controller
+    const waBody = document.getElementById('waBody');
+    const waStatus = document.getElementById('waStatus');
+    const waTyping = document.getElementById('waTyping');
+    const waPlaceholder = document.getElementById('waPlaceholder');
+
+    const crmBadge = document.getElementById('crmBadge');
+    const crmDot = document.getElementById('crmDot');
+    const crmMiniText = document.getElementById('crmMiniText');
+    const crmNotes = document.getElementById('crm_notes');
+
+    const arrows = [document.getElementById('arrow1'), document.getElementById('arrow2'), document.getElementById('arrow3')].filter(Boolean);
+
+    const crmMap = {
+      name: document.getElementById('crm_name'),
+      phone: document.getElementById('crm_phone'),
+      budget: document.getElementById('crm_budget'),
+      bedrooms: document.getElementById('crm_bedrooms'),
+      timeline: document.getElementById('crm_timeline'),
+      status: document.getElementById('crm_status')
+    };
+
+    const restartBtn = document.getElementById('simRestart');
+
+    let simTimers = [];
+    function clearSimTimers(){ simTimers.forEach(t => clearTimeout(t)); simTimers = []; }
+
+    function nowTime(){
+      const d = new Date();
+      const hh = String(d.getHours()).padStart(2,'0');
+      const mm = String(d.getMinutes()).padStart(2,'0');
+      return `${hh}:${mm}`;
+    }
+    function scrollChat(){ if(waBody) waBody.scrollTop = waBody.scrollHeight; }
+    function bubble(type, text){
+      if(!waBody) return;
+      const el = document.createElement('div');
+      el.className = `wa-bubble ${type}`;
+      const t = document.createElement('div');
+      t.className = 'wa-text';
+      t.textContent = text;
+      const time = document.createElement('div');
+      time.className = 'wa-time';
+      time.textContent = nowTime();
+      el.appendChild(t);
+      el.appendChild(time);
+      waBody.appendChild(el);
+      scrollChat();
+    }
+    function setTyping(on){
+      if(!waTyping || !waStatus || !waPlaceholder) return;
+      waTyping.style.display = on ? 'inline-flex' : 'none';
+      waPlaceholder.style.display = on ? 'none' : 'block';
+      waStatus.textContent = on ? 'typing…' : 'online';
+    }
+    function glowArrows(){
+      arrows.forEach((a, i) => {
+        simTimers.push(setTimeout(() => {
+          a?.classList.add('is-glowing');
+          simTimers.push(setTimeout(()=>a?.classList.remove('is-glowing'), 900));
+        }, i*180));
+      });
+    }
+    function hotField(key){
+      const field = document.querySelector(`.crm-field[data-key="${key}"]`);
+      if(!field) return;
+      field.classList.add('is-hot');
+      simTimers.push(setTimeout(()=>field.classList.remove('is-hot'), 1100));
+    }
+    function setCrm(key, val){
+      if(crmMap[key]) crmMap[key].textContent = val;
+      hotField(key);
+      glowArrows();
+      crmDot?.classList.add('is-live');
+      if(crmMiniText) crmMiniText.textContent = 'Syncing update…';
+      simTimers.push(setTimeout(()=>{
+        if(crmMiniText) crmMiniText.textContent = 'Listening on WhatsApp';
+        crmDot?.classList.remove('is-live');
+      }, 900));
+    }
+    function resetSimulation(){
+      clearSimTimers();
+      if(waBody) waBody.innerHTML = '';
+      setTyping(false);
+      if(crmNotes) crmNotes.textContent = 'Waiting for the first message…';
+      Object.keys(crmMap).forEach(k => { if(crmMap[k]) crmMap[k].textContent = '—'; });
+      if(crmBadge) crmBadge.textContent = 'Syncing';
+    }
+    function runSimulation(){
+      resetSimulation();
+      const waName = document.getElementById('waName');
+      if(waName) waName.textContent = selectedAgent.name;
+      const crmName = document.getElementById('crmName');
+      if(crmName) crmName.textContent = selectedAgent.crm;
+
+      const steps = [
+        {d:700,  fn:()=>{ bubble('user','Hi, I saw your ad. Is this still available?'); if(crmNotes) crmNotes.textContent='Inbound WhatsApp lead from Meta ad.'; }},
+        {d:900,  fn:()=>{ setTyping(true); }},
+        {d:1400, fn:()=>{ setTyping(false); bubble('ai','Hey ???? yes — it’s available. Quick one: are you looking to buy or rent?'); }},
+        {d:900,  fn:()=>{ bubble('user','Buy.'); setCrm('status','New lead'); }},
+        {d:900,  fn:()=>{ setTyping(true); }},
+        {d:1400, fn:()=>{ setTyping(false); bubble('ai','Nice. hmm what budget range are you comfortable with (AED)?'); }},
+        {d:900,  fn:()=>{ bubble('user','Around 1.6M.'); setCrm('budget','AED 1.6M'); }},
+        {d:900,  fn:()=>{ setTyping(true); }},
+        {d:1400, fn:()=>{ setTyping(false); bubble('ai','Got it. How many bedrooms are you considering?'); }},
+        {d:900,  fn:()=>{ bubble('user','2BR'); setCrm('bedrooms','2BR'); }},
+        {d:900,  fn:()=>{ setTyping(true); }},
+        {d:1500, fn:()=>{ setTyping(false); bubble('ai','Perfect. When are you planning to move or invest — this month, next month, or later?'); }},
+        {d:1000, fn:()=>{ bubble('user','Next month ideally.'); setCrm('timeline','Next month'); }},
+        {d:900,  fn:()=>{ setTyping(true); }},
+        {d:1500, fn:()=>{ setTyping(false); bubble('ai','Thanks — last detail: what’s your name and best number so I can share options + book a viewing?'); }},
+        {d:1100, fn:()=>{ bubble('user','Keiffer, +971 50 123 4567'); setCrm('name','Keiffer'); setCrm('phone','+971 50 123 4567'); }},
+        {d:900,  fn:()=>{ setTyping(true); }},
+        {d:1500, fn:()=>{ setTyping(false); bubble('ai','Perfect, Keiffer. I’ll send 3 short options that match 2BR around AED 1.6M and we can lock a viewing time.'); setCrm('status','Qualified'); if(crmBadge) crmBadge.textContent='Qualified'; if(crmNotes) crmNotes.textContent='Qualified lead: Buy • 2BR • AED 1.6M • Timeline: Next month.'; }},
+      ];
+
+      let acc = 0;
+      steps.forEach(s => { acc += s.d; simTimers.push(setTimeout(s.fn, acc)); });
+    }
+
+    function openSimulation(){
+      haptic([10,20,10]);
+      simOverlay.classList.add('is-open');
+      simOverlay.setAttribute('aria-hidden','false');
+      document.body.style.overflow = 'hidden';
+      runSimulation();
+    }
+    function closeSimulation(){
+      haptic([8]);
+      simOverlay.classList.remove('is-open');
+      simOverlay.setAttribute('aria-hidden','true');
+      document.body.style.overflow = '';
+      resetSimulation();
+    }
+
+    document.getElementById('launchSimulationFromAgents')?.addEventListener('click', () => {
+      closeAgentOverlay();
+      openSimulation();
+    });
+
+    restartBtn?.addEventListener('click', () => { haptic([8,18,8]); runSimulation(); });
+
+    simOverlay?.addEventListener('click', (e)=>{ if(e.target === simOverlay) closeSimulation(); });
+    simClose?.addEventListener('click', () => { closeSimulation(); });
+
+    document.addEventListener('keydown', (e) => {
+      if(e.key !== 'Escape') return;
+      if(simOverlay.classList.contains('is-open')) closeSimulation();
+      if(agentOverlay.classList.contains('is-open')) closeAgentOverlay();
+    });
+  </script>
+</body>
+</html>
