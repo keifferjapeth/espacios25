@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pricing & FAQ — Espacios</title>
+  <style>
+    :root {
+      --accent: #b6ff3b;
+      --muted: rgba(15, 15, 16, 0.72);
+      --glass-bg: rgba(255, 255, 255, 0.42);
+      --glass-border: rgba(255, 255, 255, 0.68);
+      --glass-blur: 16px;
+      --radius-xl: 24px;
+      --shadow-md: 0 14px 28px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 18px 40px rgba(0, 0, 0, 0.12);
+      --shadow-xl: 0 22px 52px rgba(0, 0, 0, 0.16);
+      --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+      color-scheme: light;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Inter", "SF Pro Display", "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 20% 20%, rgba(182, 255, 59, 0.08), transparent 28%),
+        radial-gradient(circle at 80% 10%, rgba(94, 234, 212, 0.12), transparent 32%),
+        linear-gradient(145deg, #f7f9fb, #eef2f7);
+      color: #0f0f10;
+      padding: 40px 0;
+      scroll-behavior: smooth;
+    }
+
+    .ambient {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .orb {
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      filter: blur(70px);
+      opacity: 0.22;
+      animation: float 18s var(--ease) infinite;
+      mix-blend-mode: multiply;
+    }
+    .orb.one {
+      background: #b6ff3b;
+      top: -60px;
+      left: 12%;
+      animation-delay: 0s;
+    }
+    .orb.two {
+      background: #6ad6ff;
+      bottom: 6%;
+      right: 14%;
+      animation-delay: 2.5s;
+    }
+
+    @keyframes float {
+      0% {
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+      50% {
+        transform: translate3d(12px, -18px, 0) scale(1.05);
+      }
+      100% {
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      width: min(1200px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .section {
+      position: relative;
+      z-index: 5;
+      width: 100%;
+      margin: 0 auto;
+      padding: 70px 0;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 26px;
+    }
+    .section-head .intro {
+      max-width: 760px;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(14px);
+      font-size: 13px;
+      font-weight: 650;
+      color: rgba(15, 15, 16, 0.7);
+    }
+    .kicker .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(182, 255, 59, 0.18), 0 0 14px rgba(182, 255, 59, 0.35);
+    }
+
+    .section-title {
+      font-size: clamp(28px, 3.2vw, 42px);
+      font-weight: 820;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-top: 14px;
+      color: rgba(15, 15, 16, 0.92);
+    }
+    .section-sub {
+      margin-top: 10px;
+      max-width: 720px;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 15px;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 22px;
+      align-items: start;
+      margin-top: 28px;
+    }
+
+    .glass-card {
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.22));
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--shadow-xl);
+      backdrop-filter: blur(var(--glass-blur));
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      position: relative;
+      transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease), border-color 0.35s var(--ease);
+      isolation: isolate;
+    }
+    .glass-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.12) 32%, rgba(147, 197, 253, 0.07) 52%, rgba(196, 181, 253, 0.07) 72%, rgba(255, 255, 255, 0.28) 100%);
+      pointer-events: none;
+      opacity: 0.75;
+    }
+    .glass-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 24px 62px rgba(0, 0, 0, 0.12);
+      border-color: rgba(255, 255, 255, 0.9);
+    }
+
+    .card-pad {
+      position: relative;
+      z-index: 2;
+      padding: 26px;
+    }
+
+    .price-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    .price-name {
+      font-size: 18px;
+      font-weight: 850;
+      letter-spacing: -0.02em;
+      color: rgba(15, 15, 16, 0.92);
+    }
+    .price-tag {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      text-align: right;
+    }
+    .price-amt {
+      font-size: 34px;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+    }
+    .price-amt small {
+      font-size: 13px;
+      font-weight: 800;
+      color: rgba(15, 15, 16, 0.65);
+      letter-spacing: -0.01em;
+    }
+    .price-note {
+      font-size: 12px;
+      font-weight: 650;
+      color: rgba(15, 15, 16, 0.55);
+    }
+
+    .feature-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(15, 15, 16, 0.07);
+    }
+    .feature {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      color: rgba(15, 15, 16, 0.74);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+    .check {
+      flex: 0 0 auto;
+      width: 18px;
+      height: 18px;
+      border-radius: 6px;
+      background: rgba(182, 255, 59, 0.22);
+      border: 1px solid rgba(182, 255, 59, 0.45);
+      box-shadow: 0 10px 24px rgba(182, 255, 59, 0.18);
+      display: grid;
+      place-items: center;
+      margin-top: 1px;
+    }
+    .check svg {
+      width: 12px;
+      height: 12px;
+      fill: rgba(10, 10, 10, 0.8);
+    }
+
+    .cta-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .btn-primary,
+    .btn-ghost {
+      padding: 14px 18px;
+      border-radius: 16px;
+      font-size: 14px;
+      font-weight: 750;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), background 0.25s var(--ease), color 0.25s var(--ease);
+    }
+    .btn-primary {
+      color: rgba(10, 10, 10, 0.9);
+      background: linear-gradient(120deg, rgba(182, 255, 59, 0.92), rgba(149, 255, 142, 0.86));
+      box-shadow: 0 18px 36px rgba(93, 168, 15, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px) scale(1.01);
+      box-shadow: 0 24px 48px rgba(93, 168, 15, 0.22);
+    }
+    .btn-ghost {
+      color: rgba(15, 15, 16, 0.78);
+      background: rgba(255, 255, 255, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(14px);
+    }
+    .btn-ghost:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+      background: rgba(255, 255, 255, 0.62);
+      color: rgba(15, 15, 16, 0.92);
+    }
+    .btn-ghost svg,
+    .btn-primary svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+      opacity: 0.85;
+    }
+
+    .addons-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .addons-title {
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      color: rgba(15, 15, 16, 0.9);
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      box-shadow: var(--shadow-md);
+      font-size: 12px;
+      font-weight: 750;
+      color: rgba(15, 15, 16, 0.68);
+    }
+
+    .addons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .addon {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.36);
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.06);
+      backdrop-filter: blur(14px);
+    }
+    .addon strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: -0.01em;
+      color: rgba(15, 15, 16, 0.9);
+      margin-bottom: 4px;
+    }
+    .addon span {
+      display: block;
+      font-size: 12.5px;
+      color: rgba(15, 15, 16, 0.62);
+      line-height: 1.45;
+    }
+    .addon .price {
+      font-size: 13px;
+      font-weight: 900;
+      color: rgba(15, 15, 16, 0.85);
+      white-space: nowrap;
+      margin-left: 12px;
+      padding-top: 2px;
+    }
+
+    .fineprint {
+      margin-top: 14px;
+      font-size: 12.5px;
+      color: rgba(15, 15, 16, 0.62);
+      line-height: 1.55;
+    }
+
+    .faq-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 28px;
+    }
+    details.faq {
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.38);
+      border: 1px solid rgba(255, 255, 255, 0.62);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.07);
+      backdrop-filter: blur(14px);
+      overflow: hidden;
+      transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), background 0.25s var(--ease);
+    }
+    details.faq:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.09);
+      background: rgba(255, 255, 255, 0.46);
+    }
+    details.faq summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 18px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      color: rgba(15, 15, 16, 0.9);
+      font-size: 14px;
+      user-select: none;
+    }
+    details.faq summary::-webkit-details-marker {
+      display: none;
+    }
+    .faq .chev {
+      width: 28px;
+      height: 28px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.06);
+      flex: 0 0 auto;
+      transition: transform 0.25s var(--ease);
+    }
+    .faq[open] .chev {
+      transform: rotate(180deg);
+    }
+    .faq .chev svg {
+      width: 14px;
+      height: 14px;
+      stroke: rgba(15, 15, 16, 0.68);
+      stroke-width: 2.5;
+      fill: none;
+    }
+    .faq .answer {
+      padding: 0 18px 0;
+      color: rgba(15, 15, 16, 0.68);
+      line-height: 1.65;
+      font-size: 13.5px;
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transition: max-height 0.4s var(--ease), opacity 0.32s var(--ease);
+    }
+    .faq[open] .answer {
+      opacity: 1;
+      margin-top: 4px;
+    }
+
+    /* Reveal animation */
+    [data-animate] {
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity 0.45s var(--ease), transform 0.45s var(--ease);
+    }
+    .is-visible[data-animate] {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 1000px) {
+      .pricing-grid {
+        grid-template-columns: 1fr;
+      }
+      .faq-grid {
+        grid-template-columns: 1fr;
+      }
+      .section-head {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      body {
+        padding: 24px 0;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient">
+    <div class="orb one"></div>
+    <div class="orb two"></div>
+  </div>
+
+  <main class="page" id="page">
+    <section class="section" id="pricing">
+      <div class="section-head" data-animate>
+        <div class="intro">
+          <div class="kicker"><span class="dot"></span>Pricing</div>
+          <h2 class="section-title">Clear monthly pricing, flexible add-ons.</h2>
+          <p class="section-sub">
+            Start with the base platform fee, then add AI and channels as your operation grows. Integrations connect your flows to apps and CRMs.
+          </p>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;" data-animate>
+          <a class="btn-ghost" href="https://dashboard.espacios.me/" target="_blank" rel="noopener">
+            Open Dashboard
+            <svg viewBox="0 0 24 24"><path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z"/><path d="M5 5h7v2H7v10h10v-5h2v7H5V5z"/></svg>
+          </a>
+          <a class="btn-primary" href="https://dashboard.espacios.me/signup" target="_blank" rel="noopener">
+            Start Trial
+            <span style="display:inline-grid; place-items:center; width:22px; height:22px; border-radius:10px; background: rgba(255,255,255,.35); border:1px solid rgba(255,255,255,.45);">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px; fill: rgba(10,10,10,.85);"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </span>
+          </a>
+        </div>
+      </div>
+
+      <div class="pricing-grid">
+        <div class="glass-card" data-animate>
+          <div class="card-pad">
+            <div class="price-top">
+              <div>
+                <div class="price-name">Base Platform Fee <span style="font-weight:800; color: rgba(15,15,16,.55);">(required)</span></div>
+                <div style="margin-top:8px; color: rgba(15,15,16,.68); line-height:1.55; font-size:13.5px;">
+                  The core platform for messaging automation, lead capture, routing, and operational control across channels.
+                </div>
+              </div>
+              <div class="price-tag">
+                <div class="price-amt">AED 110 <small>/ month</small></div>
+                <div class="price-note">billed monthly</div>
+              </div>
+            </div>
+
+            <ul class="feature-list">
+              <li class="feature">
+                <span class="check">
+                  <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5 1.4-1.4L9 14.2 18.6 4.6z"/></svg>
+                </span>
+                WhatsApp + Instagram-ready workflows and lead capture
+              </li>
+              <li class="feature">
+                <span class="check">
+                  <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5 1.4-1.4L9 14.2 18.6 4.6z"/></svg>
+                </span>
+                Qualification, routing, and handoff to your team
+              </li>
+              <li class="feature">
+                <span class="check">
+                  <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5 1.4-1.4L9 14.2 18.6 4.6z"/></svg>
+                </span>
+                CRM + app integrations to sync lead data and outcomes
+              </li>
+            </ul>
+
+            <div class="cta-row">
+              <a class="btn-ghost" href="https://espacios.me" target="_blank" rel="noopener">
+                Visit espacios.me
+                <svg viewBox="0 0 24 24"><path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3z"/><path d="M5 5h7v2H7v10h10v-5h2v7H5V5z"/></svg>
+              </a>
+              <a class="btn-ghost" href="mailto:hello@espacios.me">
+                Email hello@espacios.me
+                <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card" data-animate>
+          <div class="card-pad">
+            <div class="addons-head">
+              <div class="addons-title">Add-Ons <span style="font-weight:800; color: rgba(15,15,16,.55);">(optional)</span></div>
+              <div class="pill">Scale features as needed</div>
+            </div>
+
+            <div class="addons">
+              <div class="addon">
+                <div>
+                  <strong>AI Copilot</strong>
+                  <span>Assist agents with faster replies, better consistency, and guided handling.</span>
+                </div>
+                <div class="price">AED 47 / seat / month</div>
+              </div>
+
+              <div class="addon">
+                <div>
+                  <strong>AI Insights</strong>
+                  <span>Analytics layer that surfaces patterns, performance, and quality opportunities.</span>
+                </div>
+                <div class="price">AED 504 / month</div>
+              </div>
+
+              <div class="addon">
+                <div>
+                  <strong>Extra Channel</strong>
+                  <span>Add more inbound/outbound channels as your team expands.</span>
+                </div>
+                <div class="price">AED 47 / channel / month</div>
+              </div>
+
+              <div class="addon">
+                <div>
+                  <strong>AI (Resolved Conversation)</strong>
+                  <span>Usage-based AI applied per resolved conversation.</span>
+                </div>
+                <div class="price">AED 1.50 / resolved</div>
+              </div>
+
+              <div class="addon">
+                <div>
+                  <strong>Custom Workflows / Automations</strong>
+                  <span>Built to match your sales and support operations.</span>
+                </div>
+                <div class="price">Quoted</div>
+              </div>
+
+              <div class="addon">
+                <div>
+                  <strong>Extra Bots / Numbers / Advanced Automations</strong>
+                  <span>Expanded capacity for multi-team or multi-entity setups.</span>
+                </div>
+                <div class="price">Quoted</div>
+              </div>
+            </div>
+
+            <div class="fineprint">
+              Integrations connect espacios to your apps and CRM so lead fields, tags, stages, and outcomes stay synced in real time.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="faq" style="padding-top: 0;">
+      <div class="section-head" style="margin-bottom: 18px;" data-animate>
+        <div class="intro">
+          <div class="kicker"><span class="dot"></span>FAQ</div>
+          <h2 class="section-title">Answers that keep momentum.</h2>
+          <p class="section-sub">
+            Quick clarity on pricing, trials, integrations, and how your team uses espacios day-to-day.
+          </p>
+        </div>
+      </div>
+
+      <div class="faq-grid">
+        <details class="faq" data-animate>
+          <summary>
+            Is the AED 110/month fee required?
+            <span class="chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+          </summary>
+          <div class="answer">
+            Yes. The base platform fee activates the core system for automation, lead capture, routing, and operational controls. Add-ons layer on top as needed.
+          </div>
+        </details>
+
+        <details class="faq" data-animate>
+          <summary>
+            How do I start the trial?
+            <span class="chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+          </summary>
+          <div class="answer">
+            Use the signup link to create your workspace and begin: <strong>dashboard.espacios.me/signup</strong>. You can also access your workspace from <strong>dashboard.espacios.me</strong>.
+          </div>
+        </details>
+
+        <details class="faq" data-animate>
+          <summary>
+            What does “AI resolved conversation” mean?
+            <span class="chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+          </summary>
+          <div class="answer">
+            It’s a usage-based AI charge applied per conversation that reaches a resolved outcome through the AI layer.
+          </div>
+        </details>
+
+        <details class="faq" data-animate>
+          <summary>
+            Can espacios integrate with my CRM and apps?
+            <span class="chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+          </summary>
+          <div class="answer">
+            Yes. espacios can connect to apps and CRMs so key lead data syncs in real time (fields, tags, stages, outcomes), keeping your team aligned.
+          </div>
+        </details>
+
+        <details class="faq" data-animate>
+          <summary>
+            What’s included in custom workflows and automations?
+            <span class="chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+          </summary>
+          <div class="answer">
+            Custom builds cover qualification flows, routing logic, follow-ups, agent tasks, and operational automations mapped to your process. Pricing is scoped and quoted.
+          </div>
+        </details>
+
+        <details class="faq" data-animate>
+          <summary>
+            How do I get support or request setup help?
+            <span class="chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+          </summary>
+          <div class="answer">
+            Email <strong>hello@espacios.me</strong> with your workspace details and what you want to build. You’ll get guidance on integrations, workflows, and add-ons.
+          </div>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Reveal on scroll for smooth entrance animations
+    const animatedNodes = document.querySelectorAll('[data-animate]');
+    const reveal = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          reveal.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.22 });
+    animatedNodes.forEach((node) => reveal.observe(node));
+
+    // FAQ accordion animation for seamless open/close
+    const faqs = Array.from(document.querySelectorAll('details.faq'));
+    faqs.forEach((faq) => {
+      const answer = faq.querySelector('.answer');
+      const summary = faq.querySelector('summary');
+
+      const setHeight = (open) => {
+        const contentHeight = answer.scrollHeight;
+        answer.style.maxHeight = open ? `${contentHeight + 20}px` : '0px';
+        answer.style.opacity = open ? '1' : '0';
+      };
+
+      // Init state
+      setHeight(faq.open);
+
+      summary.addEventListener('click', (event) => {
+        event.preventDefault();
+        const isOpening = !faq.open;
+
+        // Close all others for a smoother experience
+        faqs.forEach((item) => {
+          if (item !== faq && item.open) {
+            item.open = false;
+            const otherAnswer = item.querySelector('.answer');
+            otherAnswer.style.maxHeight = '0px';
+            otherAnswer.style.opacity = '0';
+          }
+        });
+
+        faq.open = isOpening;
+        setHeight(isOpening);
+      });
+
+      window.addEventListener('resize', () => {
+        if (faq.open) {
+          setHeight(true);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
