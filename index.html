@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Espacios25 — Smart Spatial Insights</title>
+  <style>
+    :root {
+      --ink: #0f172a;
+      --night: #0b1021;
+      --muted: #c9d4ff;
+      --accent: #7c5dff;
+      --accent-2: #4ade80;
+      --card: rgba(255, 255, 255, 0.07);
+      --border: rgba(255, 255, 255, 0.12);
+      --bg: radial-gradient(circle at 10% 20%, rgba(124, 93, 255, 0.2), transparent 25%),
+        radial-gradient(circle at 80% 10%, rgba(74, 222, 128, 0.18), transparent 26%),
+        linear-gradient(135deg, #0d1326 0%, #0a0f1f 50%, #070a15 100%);
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: #e8edff;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; }
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 20px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: linear-gradient(180deg, rgba(7, 10, 21, 0.95) 0%, rgba(7, 10, 21, 0.75) 100%);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .brand .logo {
+      width: 42px;
+      height: 42px;
+      background: radial-gradient(circle at 30% 30%, #a5b4fc, #7c5dff);
+      border-radius: 14px;
+      position: relative;
+      box-shadow: 0 12px 40px rgba(124, 93, 255, 0.35);
+    }
+    .brand .logo::after,
+    .brand .logo::before {
+      content: "";
+      position: absolute;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.35);
+    }
+    .brand .logo::after {
+      width: 20px;
+      height: 6px;
+      top: 12px;
+      left: 8px;
+      filter: blur(0.2px);
+    }
+    .brand .logo::before {
+      width: 16px;
+      height: 16px;
+      bottom: 8px;
+      right: 8px;
+      background: rgba(255, 255, 255, 0.45);
+    }
+    nav ul {
+      display: flex;
+      list-style: none;
+      gap: 12px;
+      margin: 0;
+      padding: 0;
+      flex-wrap: wrap;
+    }
+    nav a {
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      color: #dbe5ff;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    nav a:hover {
+      border-color: var(--border);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      background: linear-gradient(135deg, rgba(124, 93, 255, 0.2), rgba(74, 222, 128, 0.16));
+      color: #f8fbff;
+    }
+    .btn.secondary {
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 15px 35px rgba(124, 93, 255, 0.25);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+    .hero {
+      padding: 64px 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 26px;
+      align-items: center;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      color: #b8c2ff;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      margin-bottom: 16px;
+    }
+    h1 {
+      margin: 0 0 16px;
+      font-size: clamp(2.4rem, 3vw + 1.5rem, 3.8rem);
+      line-height: 1.08;
+    }
+    p.lead {
+      margin: 0 0 22px;
+      color: #d2dbff;
+      font-size: 1.05rem;
+      max-width: 640px;
+    }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+    .stat-card {
+      padding: 16px;
+      border-radius: 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+    }
+    .stat-card h3 {
+      margin: 0 0 8px;
+      font-size: 1.5rem;
+    }
+    .stat-card p {
+      margin: 0;
+      color: #c9d4ff;
+      font-size: 0.95rem;
+    }
+    .panel {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    .panel::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 30% 20%, rgba(124, 93, 255, 0.08), transparent 40%),
+        radial-gradient(circle at 80% 60%, rgba(74, 222, 128, 0.08), transparent 35%);
+    }
+    .hud {
+      position: relative;
+      border-radius: 14px;
+      background: #0c1227;
+      border: 1px solid var(--border);
+      padding: 18px;
+      color: #e7edff;
+      overflow: hidden;
+      min-height: 320px;
+    }
+    .hud-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 14px;
+      height: 100%;
+    }
+    .graph {
+      background: linear-gradient(180deg, rgba(124, 93, 255, 0.1), rgba(124, 93, 255, 0));
+      border-radius: 12px;
+      border: 1px dashed var(--border);
+      position: relative;
+      overflow: hidden;
+      padding: 14px;
+    }
+    .graph svg { width: 100%; height: 100%; }
+    .legend {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: #cdd6ff;
+    }
+    .legend i {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+    .controls {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+    .controls h4 {
+      margin: 0 0 4px;
+    }
+    .chip-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .chip {
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.05);
+      transition: all 0.2s ease;
+    }
+    .chip.active {
+      background: linear-gradient(135deg, rgba(124, 93, 255, 0.18), rgba(74, 222, 128, 0.16));
+      border-color: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 8px 24px rgba(124, 93, 255, 0.25);
+    }
+    .slider-row {
+      display: grid;
+      gap: 6px;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: #7c5dff;
+      cursor: pointer;
+    }
+    section {
+      margin: 64px 0;
+    }
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .price-card {
+      padding: 18px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      backdrop-filter: blur(10px);
+      display: grid;
+      gap: 12px;
+      position: relative;
+    }
+    .price-card h3 { margin: 0; }
+    .price-card .amount {
+      font-size: 2rem;
+      font-weight: 800;
+    }
+    .price-card ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 8px;
+      color: #d8e1ff;
+    }
+    .badge {
+      position: absolute;
+      right: 14px;
+      top: 14px;
+      background: rgba(74, 222, 128, 0.16);
+      border: 1px solid rgba(74, 222, 128, 0.4);
+      color: #bbf7d0;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .faq {
+      display: grid;
+      gap: 12px;
+    }
+    .faq-item {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      overflow: hidden;
+    }
+    .faq-question {
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.25s ease;
+      padding: 0 16px;
+      color: #cfd8ff;
+    }
+    .faq-item.active .faq-answer {
+      max-height: 400px;
+      padding-bottom: 14px;
+    }
+    .faq-item.active .faq-question svg { transform: rotate(180deg); }
+    .pill-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: #c8d2ff;
+    }
+    .overlay-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 6, 12, 0.7);
+      backdrop-filter: blur(10px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 40;
+    }
+    .overlay-backdrop.active { display: flex; }
+    .overlay-card {
+      width: min(1024px, 100%);
+      background: #0a0f1f;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      position: relative;
+      box-shadow: 0 24px 72px rgba(0, 0, 0, 0.45);
+    }
+    .overlay-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .close-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      color: #d8e1ff;
+      font-weight: 800;
+    }
+    .sim-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 14px;
+    }
+    .map {
+      background: radial-gradient(circle at 20% 20%, rgba(124, 93, 255, 0.2), transparent 45%),
+        radial-gradient(circle at 80% 80%, rgba(74, 222, 128, 0.25), transparent 50%),
+        #0d1326;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      position: relative;
+      overflow: hidden;
+      min-height: 320px;
+    }
+    .map svg { width: 100%; height: 100%; }
+    .metric-panel {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+    .meter {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .meter-bar {
+      flex: 1;
+      height: 8px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      position: relative;
+    }
+    .meter-fill {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, #7c5dff, #4ade80);
+      width: 60%;
+      transition: width 0.3s ease;
+    }
+    footer {
+      margin: 64px 0 16px;
+      color: #97a3ce;
+      text-align: center;
+      font-size: 0.95rem;
+    }
+    @media (max-width: 800px) {
+      .hud-grid, .sim-grid { grid-template-columns: 1fr; }
+      .nav { flex-wrap: wrap; }
+      .btn.hero { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav">
+      <div class="brand">
+        <span class="logo"></span>
+        Espacios25
+      </div>
+      <nav aria-label="Primary">
+        <ul>
+          <li><a href="#hero">Overview</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="#faq">FAQ</a></li>
+          <li><a href="#simulation">Simulation</a></li>
+        </ul>
+      </nav>
+      <button class="btn secondary" data-open-overlay>Launch Simulation</button>
+    </div>
+  </header>
+  <main class="page">
+    <section id="hero" class="hero">
+      <div>
+        <div class="eyebrow">Spatial intelligence for hybrid campuses</div>
+        <h1>Model, simulate, and orchestrate adaptive spaces.</h1>
+        <p class="lead">Espacios25 blends live occupancy, acoustic telemetry, and predictive automations so you can design serene, efficient campuses with confidence.</p>
+        <div class="pill-row">
+          <span class="pill">Occupancy heatmaps</span>
+          <span class="pill">Acoustic monitoring</span>
+          <span class="pill">Predictive scheduling</span>
+          <span class="pill">Wellness insights</span>
+        </div>
+        <div style="margin-top: 18px; display: flex; gap: 12px; flex-wrap: wrap;">
+          <button class="btn hero" data-open-overlay>Try live simulation</button>
+          <a class="btn secondary" href="#pricing">See plans</a>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-card">
+            <h3>98%</h3>
+            <p>Reduction in noise spillover across managed floors.</p>
+          </div>
+          <div class="stat-card">
+            <h3>4.2h</h3>
+            <p>Average weekly time saved per workspace via automation.</p>
+          </div>
+          <div class="stat-card">
+            <h3>37%</h3>
+            <p>Increase in room utilization after running simulations.</p>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="hud">
+          <div class="hud-grid">
+            <div class="graph" aria-label="Occupancy timeline visualization">
+              <svg viewBox="0 0 360 220" role="img" aria-label="Area chart showing occupancy and noise">
+                <defs>
+                  <linearGradient id="grad1" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="rgba(124,93,255,0.7)"></stop>
+                    <stop offset="100%" stop-color="rgba(124,93,255,0.05)"></stop>
+                  </linearGradient>
+                  <linearGradient id="grad2" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="rgba(74,222,128,0.8)"></stop>
+                    <stop offset="100%" stop-color="rgba(74,222,128,0.05)"></stop>
+                  </linearGradient>
+                </defs>
+                <path d="M0 180 C40 140 80 160 120 120 C160 80 200 100 240 70 C280 50 320 60 360 40 L360 220 L0 220 Z" fill="url(#grad1)" stroke="#7c5dff" stroke-width="2" opacity="0.9"></path>
+                <path d="M0 190 C40 170 80 140 120 145 C160 150 200 110 240 120 C280 130 320 100 360 110 L360 220 L0 220 Z" fill="url(#grad2)" stroke="#4ade80" stroke-width="2" opacity="0.9"></path>
+                <g stroke="#243656" stroke-dasharray="4 6" stroke-width="1">
+                  <line x1="0" y1="60" x2="360" y2="60"></line>
+                  <line x1="0" y1="120" x2="360" y2="120"></line>
+                  <line x1="0" y1="180" x2="360" y2="180"></line>
+                </g>
+              </svg>
+              <div class="legend">
+                <span><i style="background:#7c5dff"></i>Occupancy Forecast</span>
+                <span><i style="background:#4ade80"></i>Acoustic Comfort</span>
+              </div>
+            </div>
+            <div class="controls">
+              <div>
+                <h4>Choose layout</h4>
+                <div class="chip-row" id="layoutChips">
+                  <button class="chip active" data-layout="focus">Focus floors</button>
+                  <button class="chip" data-layout="hybrid">Hybrid teams</button>
+                  <button class="chip" data-layout="event">Event-ready</button>
+                </div>
+              </div>
+              <div class="slider-row">
+                <label for="occupancyRange">Occupancy</label>
+                <input id="occupancyRange" type="range" min="20" max="100" value="65" />
+              </div>
+              <div class="slider-row">
+                <label for="noiseRange">Acoustic threshold</label>
+                <input id="noiseRange" type="range" min="20" max="100" value="45" />
+              </div>
+              <div class="slider-row">
+                <label for="wellnessRange">Wellness bias</label>
+                <input id="wellnessRange" type="range" min="0" max="100" value="55" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pricing">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow" style="margin-bottom:8px;">Transparent pricing</div>
+          <h2 style="margin:0 0 6px;">Plans tailored to how you operate.</h2>
+          <p class="lead" style="margin:0;">Start with simulation, grow into full orchestration with occupancy, acoustics, and predictive insights.</p>
+        </div>
+        <a class="btn secondary" href="#faq">Questions? Read FAQ</a>
+      </div>
+      <div class="pricing-grid">
+        <div class="price-card">
+          <div class="badge">Starter</div>
+          <h3>Pulse</h3>
+          <div class="amount">$29<span style="font-size:0.9rem; font-weight:600; color:#c8d2ff;">/mo</span></div>
+          <ul>
+            <li>Live occupancy overlays</li>
+            <li>2 simulated floorplates</li>
+            <li>Email weekly reports</li>
+            <li>Access to hero demo</li>
+          </ul>
+          <button class="btn secondary">Choose Pulse</button>
+        </div>
+        <div class="price-card" style="background:linear-gradient(135deg, rgba(124,93,255,0.2), rgba(74,222,128,0.16)); border-color: rgba(255,255,255,0.2); box-shadow: 0 16px 40px rgba(124,93,255,0.25);">
+          <div class="badge">Popular</div>
+          <h3>Orchestrate</h3>
+          <div class="amount">$79<span style="font-size:0.9rem; font-weight:600; color:#e7f0ff;">/mo</span></div>
+          <ul>
+            <li>Unlimited simulations</li>
+            <li>Noise & comfort telemetry</li>
+            <li>Automation playbooks</li>
+            <li>Priority support</li>
+          </ul>
+          <button class="btn">Start Orchestrate</button>
+        </div>
+        <div class="price-card">
+          <div class="badge">Scale</div>
+          <h3>Canvas</h3>
+          <div class="amount">Custom</div>
+          <ul>
+            <li>Dedicated data residency</li>
+            <li>On-prem edge gateways</li>
+            <li>White-glove design partner</li>
+            <li>Onsite acoustic tuning</li>
+          </ul>
+          <button class="btn secondary">Talk to us</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="faq">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow" style="margin-bottom:8px;">FAQ</div>
+          <h2 style="margin:0 0 6px;">Everything you need to know.</h2>
+          <p class="lead" style="margin:0;">Short answers about data, privacy, and getting started with Espacios25.</p>
+        </div>
+      </div>
+      <div class="faq" aria-label="Frequently asked questions">
+        <div class="faq-item active">
+          <div class="faq-question" role="button" aria-expanded="true">
+            <span>How does the simulation overlay work?</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d8e1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+          <div class="faq-answer">
+            <p>We combine occupancy predictions with acoustic spill models to render a layered SVG overlay. Toggle modes or adjust sliders to see updates instantly.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" role="button" aria-expanded="false">
+            <span>Is my data secure?</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d8e1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+          <div class="faq-answer">
+            <p>Yes. All telemetry is encrypted in transit and at rest. Role-based access keeps simulation scopes isolated per workspace.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" role="button" aria-expanded="false">
+            <span>Can I import my floor plans?</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d8e1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+          <div class="faq-answer">
+            <p>Upload SVG or DXF files and map them to existing sensors. The overlay aligns automatically, letting you test automations on day one.</p>
+          </div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-question" role="button" aria-expanded="false">
+            <span>Do you support hardware on-prem?</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d8e1ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+          <div class="faq-answer">
+            <p>Edge gateways buffer data during outages and sync securely when connectivity returns. Canvas tier includes on-prem deployment support.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="simulation">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow" style="margin-bottom:8px;">Simulation overlay</div>
+          <h2 style="margin:0 0 6px;">Preview spatial overlays without leaving the page.</h2>
+          <p class="lead" style="margin:0;">Toggle between layouts, adjust occupancy and comfort sliders, and watch the overlay respond in real time.</p>
+        </div>
+        <button class="btn" data-open-overlay>Open overlay</button>
+      </div>
+      <div class="sim-grid">
+        <div class="map" aria-label="Inline simulation map">
+          <svg viewBox="0 0 600 360" role="img" aria-label="Floor overlay mock">
+            <rect x="20" y="20" width="560" height="320" rx="18" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.14)" stroke-width="2" />
+            <g stroke="#1f2a44" stroke-width="1.5">
+              <line x1="80" y1="40" x2="80" y2="320"></line>
+              <line x1="200" y1="40" x2="200" y2="320"></line>
+              <line x1="320" y1="40" x2="320" y2="320"></line>
+              <line x1="440" y1="40" x2="440" y2="320"></line>
+            </g>
+            <g fill="url(#heat)" opacity="0.75">
+              <defs>
+                <radialGradient id="heat" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#7c5dff" stop-opacity="0.8" />
+                  <stop offset="100%" stop-color="#7c5dff" stop-opacity="0" />
+                </radialGradient>
+              </defs>
+              <circle cx="150" cy="120" r="80"></circle>
+              <circle cx="360" cy="210" r="70"></circle>
+              <circle cx="500" cy="150" r="60"></circle>
+            </g>
+            <g fill="#4ade80" fill-opacity="0.8" stroke="#b0f2c2" stroke-width="1.5">
+              <circle cx="140" cy="230" r="12"></circle>
+              <circle cx="240" cy="180" r="12"></circle>
+              <circle cx="300" cy="110" r="12"></circle>
+              <circle cx="420" cy="170" r="12"></circle>
+              <circle cx="520" cy="230" r="12"></circle>
+            </g>
+            <text x="44" y="60" fill="#c9d4ff" font-size="12" font-family="Inter, system-ui">Flex</text>
+            <text x="164" y="60" fill="#c9d4ff" font-size="12" font-family="Inter, system-ui">Focus</text>
+            <text x="284" y="60" fill="#c9d4ff" font-size="12" font-family="Inter, system-ui">Meeting</text>
+            <text x="404" y="60" fill="#c9d4ff" font-size="12" font-family="Inter, system-ui">Labs</text>
+          </svg>
+        </div>
+        <div class="metric-panel">
+          <div class="meter" aria-label="Occupancy meter">
+            <span>Occupancy</span>
+            <div class="meter-bar"><div class="meter-fill" style="width: 72%;"></div></div>
+            <span id="occupancyLabel">72%</span>
+          </div>
+          <div class="meter" aria-label="Comfort meter">
+            <span>Comfort</span>
+            <div class="meter-bar"><div class="meter-fill" style="width: 64%;"></div></div>
+            <span id="comfortLabel">64%</span>
+          </div>
+          <div class="meter" aria-label="Wellness meter">
+            <span>Wellness</span>
+            <div class="meter-bar"><div class="meter-fill" style="width: 58%;"></div></div>
+            <span id="wellnessLabel">58%</span>
+          </div>
+          <div class="pill-row">
+            <span class="pill">Dynamic thresholds</span>
+            <span class="pill">Overlay ready</span>
+            <span class="pill">Live switching</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      Espacios25 — built for serene, data-driven spaces.
+    </footer>
+  </main>
+
+  <div class="overlay-backdrop" id="overlay" role="dialog" aria-modal="true" aria-label="Simulation overlay">
+    <div class="overlay-card">
+      <div class="overlay-header">
+        <div>
+          <div class="eyebrow" style="margin-bottom:6px;">Live overlay</div>
+          <h3 style="margin:0;">Spatial simulation cockpit</h3>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <span class="pill">SVG overlay</span>
+          <span class="pill">Noise forecast</span>
+          <span class="pill">Occupancy bias</span>
+          <button class="close-btn" aria-label="Close overlay" id="closeOverlay">×</button>
+        </div>
+      </div>
+      <div class="sim-grid">
+        <div class="map" aria-label="Overlay detail map">
+          <svg viewBox="0 0 600 360" role="img" aria-label="Overlay detail">
+            <defs>
+              <linearGradient id="gridGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="rgba(124,93,255,0.25)" />
+                <stop offset="100%" stop-color="rgba(74,222,128,0.18)" />
+              </linearGradient>
+              <radialGradient id="pulse" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#4ade80" stop-opacity="0.9" />
+                <stop offset="100%" stop-color="#4ade80" stop-opacity="0" />
+              </radialGradient>
+            </defs>
+            <rect x="18" y="18" width="564" height="324" rx="18" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.2)" stroke-width="2" />
+            <g stroke="rgba(255,255,255,0.08)" stroke-width="1">
+              <line x1="100" y1="18" x2="100" y2="342"></line>
+              <line x1="220" y1="18" x2="220" y2="342"></line>
+              <line x1="340" y1="18" x2="340" y2="342"></line>
+              <line x1="460" y1="18" x2="460" y2="342"></line>
+              <line x1="18" y1="90" x2="582" y2="90"></line>
+              <line x1="18" y1="180" x2="582" y2="180"></line>
+              <line x1="18" y1="270" x2="582" y2="270"></line>
+            </g>
+            <g opacity="0.9">
+              <polygon points="40,60 150,80 180,150 120,200 50,180" fill="rgba(124,93,255,0.28)" stroke="#9fa8ff" stroke-width="1.6" />
+              <polygon points="230,70 360,90 380,170 280,200 220,150" fill="rgba(74,222,128,0.25)" stroke="#bbf7d0" stroke-width="1.6" />
+              <polygon points="420,120 560,140 560,240 460,230 420,170" fill="rgba(124,93,255,0.2)" stroke="#a5b4fc" stroke-width="1.6" />
+            </g>
+            <g>
+              <circle class="pulse" cx="150" cy="210" r="22" fill="url(#pulse)" />
+              <circle class="pulse" cx="300" cy="140" r="20" fill="url(#pulse)" />
+              <circle class="pulse" cx="480" cy="200" r="18" fill="url(#pulse)" />
+            </g>
+          </svg>
+        </div>
+        <div class="metric-panel">
+          <div>
+            <h4 style="margin:0 0 8px;">Overlay presets</h4>
+            <div class="chip-row" id="modeChips">
+              <button class="chip active" data-mode="quiet">Quiet mode</button>
+              <button class="chip" data-mode="balanced">Balanced</button>
+              <button class="chip" data-mode="event">Event surge</button>
+            </div>
+          </div>
+          <div class="slider-row">
+            <label for="overlayOcc">Occupancy bias</label>
+            <input id="overlayOcc" type="range" min="20" max="100" value="68" />
+          </div>
+          <div class="slider-row">
+            <label for="overlayNoise">Noise tolerance</label>
+            <input id="overlayNoise" type="range" min="20" max="100" value="42" />
+          </div>
+          <div class="slider-row">
+            <label for="overlayWell">Wellness weight</label>
+            <input id="overlayWell" type="range" min="20" max="100" value="58" />
+          </div>
+          <div class="meter" aria-label="Real-time occupancy">
+            <span>Live occupancy</span>
+            <div class="meter-bar"><div class="meter-fill" id="overlayOccFill" style="width: 68%;"></div></div>
+            <span id="overlayOccLabel">68%</span>
+          </div>
+          <div class="meter" aria-label="Live comfort">
+            <span>Comfort</span>
+            <div class="meter-bar"><div class="meter-fill" id="overlayNoiseFill" style="width: 42%;"></div></div>
+            <span id="overlayNoiseLabel">42%</span>
+          </div>
+          <div class="meter" aria-label="Live wellness">
+            <span>Wellness</span>
+            <div class="meter-bar"><div class="meter-fill" id="overlayWellFill" style="width: 58%;"></div></div>
+            <span id="overlayWellLabel">58%</span>
+          </div>
+          <button class="btn" style="width:100%;" id="applyOverlay">Apply changes</button>
+          <p style="margin:0; color:#c8d2ff; font-size:0.95rem;">Adjust sliders to see gradients intensify, mirroring how our platform morphs overlay density in production.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const overlay = document.getElementById('overlay');
+    const openButtons = document.querySelectorAll('[data-open-overlay]');
+    const closeBtn = document.getElementById('closeOverlay');
+    const faqItems = document.querySelectorAll('.faq-item');
+    const layoutChips = document.getElementById('layoutChips');
+    const modeChips = document.getElementById('modeChips');
+
+    openButtons.forEach(btn => btn.addEventListener('click', () => overlay.classList.add('active')));
+    closeBtn.addEventListener('click', () => overlay.classList.remove('active'));
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('active'); });
+
+    faqItems.forEach(item => {
+      const q = item.querySelector('.faq-question');
+      q.addEventListener('click', () => {
+        const expanded = item.classList.toggle('active');
+        q.setAttribute('aria-expanded', expanded);
+        faqItems.forEach(other => { if (other !== item) { other.classList.remove('active'); other.querySelector('.faq-question').setAttribute('aria-expanded', false); } });
+      });
+    });
+
+    function wireChips(container, callback) {
+      if (!container) return;
+      container.addEventListener('click', (e) => {
+        const btn = e.target.closest('.chip');
+        if (!btn) return;
+        container.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        callback?.(btn.dataset.layout || btn.dataset.mode);
+      });
+    }
+
+    function animateMeters(ids, value) {
+      ids.forEach(id => {
+        const fill = document.getElementById(id + 'Fill');
+        const label = document.getElementById(id + 'Label');
+        if (fill) fill.style.width = value + '%';
+        if (label) label.textContent = value + '%';
+      });
+    }
+
+    const overlayOcc = document.getElementById('overlayOcc');
+    const overlayNoise = document.getElementById('overlayNoise');
+    const overlayWell = document.getElementById('overlayWell');
+
+    overlayOcc.addEventListener('input', () => animateMeters(['overlayOcc'], overlayOcc.value));
+    overlayNoise.addEventListener('input', () => animateMeters(['overlayNoise'], overlayNoise.value));
+    overlayWell.addEventListener('input', () => animateMeters(['overlayWell'], overlayWell.value));
+
+    document.getElementById('applyOverlay').addEventListener('click', () => {
+      const avg = Math.round((Number(overlayOcc.value) + Number(overlayNoise.value) + Number(overlayWell.value)) / 3);
+      animateMeters(['overlayOcc','overlayNoise','overlayWell'], avg);
+    });
+
+    wireChips(layoutChips, (mode) => {
+      const meter = document.querySelector('#simulation .meter .meter-fill');
+      const label = document.querySelector('#simulation .meter span:last-child');
+      const value = mode === 'focus' ? 62 : mode === 'hybrid' ? 74 : 88;
+      if (meter) meter.style.width = value + '%';
+      if (label) label.textContent = value + '%';
+    });
+    wireChips(modeChips, (mode) => {
+      const value = mode === 'quiet' ? 44 : mode === 'balanced' ? 58 : 76;
+      animateMeters(['overlayNoise'], value);
+    });
+  </script>
+</body>
+</html>
