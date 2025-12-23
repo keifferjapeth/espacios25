@@ -64,6 +64,7 @@
       transform-origin: center center;
       will-change: transform, left, top;
       transition: opacity 0.8s var(--ease);
+      background: transparent;
     }
 
     .the-logo[data-phase="loading"] {
@@ -99,6 +100,7 @@
       display: block;
       will-change: transform;
       z-index: 5;
+      background: transparent;
     }
 
     /* Logo fill animation (Water effect) */
@@ -222,6 +224,37 @@
     .the-logo[data-phase="loading"] .float-layer,
     .the-logo[data-phase="hero"] .float-layer { animation: logoHeroFloat 5s ease-in-out infinite; }
     .the-logo[data-phase="dock"] .float-layer { animation: none; transform: none !important; }
+
+    /* Docked mini chat */
+    .dock-chat {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      width: 260px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.9);
+      border: 1px solid rgba(0,0,0,.06);
+      box-shadow: 0 18px 48px rgba(0,0,0,.12);
+      padding: 12px;
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: opacity .35s var(--ease), transform .35s var(--ease);
+      z-index: 1800;
+    }
+    .dock-chat.is-visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+    .dock-chat-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .dock-chat-logo {
+      width: 28px; height: 28px; border-radius: 10px;
+      background: linear-gradient(135deg, #B6FF3B, #8EE62E);
+      display: grid; place-items: center;
+    }
+    .dock-chat-logo svg { width: 18px; height: 18px; fill: rgba(15,15,16,.85); }
+    .dock-chat-title { font-size: 13px; font-weight: 750; letter-spacing: -0.02em; }
+    .dock-chat-body { display: flex; flex-direction: column; gap: 8px; }
+    .dock-bubble { padding: 10px 12px; border-radius: 14px; font-size: 12px; line-height: 1.45; }
+    .dock-bubble.ai { background: rgba(255,255,255,.88); border: 1px solid rgba(0,0,0,.05); }
+    .dock-bubble.user { background: rgba(182,255,59,.2); border: 1px solid rgba(182,255,59,.35); align-self: flex-end; }
 
     /* ========================
        INTRO OVERLAY
@@ -806,6 +839,21 @@
     <div class="intro-text">espaciso</div>
   </div>
 
+  <!-- Docked mini chat -->
+  <div class="dock-chat" id="dockChat" aria-live="polite">
+    <div class="dock-chat-header">
+      <span class="dock-chat-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 2c5.52 0 10 3.806 10 8.5 0 2.15-.94 4.1-2.5 5.6v4.4l-3.7-2.17c-1.27.38-2.67.59-4.12.59-5.52 0-10-3.806-10-8.5S6.48 2 12 2Z"/></svg>
+      </span>
+      <span class="dock-chat-title">espaciso chat</span>
+    </div>
+    <div class="dock-chat-body">
+      <div class="dock-bubble ai">Hi! Scroll to see the workflow and CRM sync.</div>
+      <div class="dock-bubble user">Okay, show me the handoff.</div>
+      <div class="dock-bubble ai">Keep going — I'll dock here and stay with you.</div>
+    </div>
+  </div>
+
   <!-- Page -->
   <main class="page" id="page">
     <!-- HERO -->
@@ -1051,6 +1099,7 @@
       const heroContent = document.getElementById('heroContent');
       const aRight = document.getElementById('anchorRight');
       const dockSentinel = document.getElementById('dockSentinel');
+      const dockChat = document.getElementById('dockChat');
 
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       
@@ -1095,6 +1144,15 @@
         };
       }
 
+      function initLogoPosition() {
+        if (!logo) return;
+        const absPos = getAbsoluteAnchorPos();
+        const finalScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--logo-final-scale')) || 2.8;
+        logo.style.left = absPos.left + 'px';
+        logo.style.top = absPos.top + 'px';
+        logo.style.transform = `scale(${finalScale})`;
+      }
+
       function moveLogoToHeroInitial() {
         if (!logo) return;
         
@@ -1123,6 +1181,7 @@
           logo.style.top = absPos.top + 'px';
           logo.style.transform = `scale(${finalScale})`;
           logo.classList.add('hero-float');
+          if (dockChat) dockChat.classList.remove('is-visible');
           
           initDocking();
         };
@@ -1206,6 +1265,7 @@
             logo.style.top = y + 'px';
             logo.style.transform = `scale(${scaleTo})`;
             animating = false;
+            if (dockChat) dockChat.classList.add('is-visible');
           };
 
           if (!prefersCoarse) logo.title = 'Open chat';
@@ -1234,6 +1294,7 @@
 
           logo.dataset.phase = 'hero'; 
           logo.removeAttribute('title');
+          if (dockChat) dockChat.classList.remove('is-visible');
 
           currentAnim = logo.animate([
             { left: rect.left + 'px', top: rect.top + 'px', transform: `scale(${startScale})` },
