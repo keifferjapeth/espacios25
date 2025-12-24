@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Espacios Pricing Calculator</title>
+  <meta name="description" content="Estimate your Espacios monthly cost based on seats, channels, and AI usage." />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <header>
+    <div class="nav">
+      <a class="brand" href="/index.html"><span class="brand-mark">⚡</span><span>espacios</span></a>
+      <div class="nav-links">
+        <a class="nav-link" href="/product.html">Product</a>
+        <a class="nav-link" href="/use-cases.html">Use Cases</a>
+        <a class="nav-link" href="/pricing.html">Pricing</a>
+        <a class="nav-link" href="/faq.html">FAQ</a>
+        <a class="nav-link" href="/contact.html">Contact</a>
+      </div>
+      <a class="cta" href="https://dashboard.espacios.me/signup">Start</a>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <div>
+        <span class="eyebrow">Calculator</span>
+        <h1>Interactive pricing estimator.</h1>
+        <p>Estimate monthly spend by selecting seats, connected channels, and AI usage. Message fees from WhatsApp/Meta are passed through.</p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <a class="cta" href="https://dashboard.espacios.me/signup">Start</a>
+          <a class="cta secondary" href="/pricing.html">View pricing</a>
+        </div>
+      </div>
+      <div class="panel">
+        <h3 style="margin:0 0 8px;">Conversion path</h3>
+        <p>Calculator → signup or contact for setup.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <h2>Estimate</h2>
+        <p>Adjust inputs to see a quick range.</p>
+      </div>
+      <form class="form" id="calcForm">
+        <label>Seats
+          <input type="number" id="seats" min="1" value="3" required />
+        </label>
+        <label>Channels connected
+          <select id="channels">
+            <option value="1">1</option>
+            <option value="2" selected>2</option>
+            <option value="3">3</option>
+          </select>
+        </label>
+        <label>AI usage
+          <select id="aiUsage">
+            <option value="light">Light (included)</option>
+            <option value="medium" selected>Medium</option>
+            <option value="heavy">Heavy</option>
+          </select>
+        </label>
+        <div class="calc-output" id="estimate">AED 0 / month</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button type="submit" class="cta">Start</button>
+          <a class="cta secondary" href="/contact.html">Request setup</a>
+        </div>
+      </form>
+      <p style="margin-top:12px;">Note: WhatsApp/Meta message fees are passed through at cost.</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-links">
+      <a href="/pricing.html">Pricing</a>
+      <a href="/faq.html">FAQ</a>
+      <a href="/contact.html">Contact</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/security.html">Security</a>
+      <a href="/status.html">Status</a>
+    </div>
+    <div>Email: <a href="mailto:hello@espacios.me">hello@espacios.me</a></div>
+  </footer>
+
+  <script>
+    const form = document.getElementById('calcForm');
+    const seatsInput = document.getElementById('seats');
+    const channelsInput = document.getElementById('channels');
+    const aiUsageInput = document.getElementById('aiUsage');
+    const output = document.getElementById('estimate');
+
+    function formatCurrency(amount) {
+      return `AED ${Math.round(amount).toLocaleString()} / month`;
+    }
+
+    function compute() {
+      const seats = Math.max(1, parseInt(seatsInput.value || '0', 10));
+      const channels = parseInt(channelsInput.value, 10);
+      const aiUsage = aiUsageInput.value;
+
+      const base = 110;
+      const seatCost = Math.max(0, seats - 1) * 35; // after first seat
+      const channelCost = Math.max(0, channels - 1) * 20;
+      const aiCost = aiUsage === 'medium' ? 80 : aiUsage === 'heavy' ? 180 : 0;
+
+      const total = base + seatCost + channelCost + aiCost;
+      output.textContent = formatCurrency(total);
+    }
+
+    form.addEventListener('input', compute);
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      window.location.href = 'https://dashboard.espacios.me/signup';
+    });
+
+    compute();
+  </script>
+</body>
+</html>
