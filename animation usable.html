@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>espacios — Design Your AI</title>
+  <meta name="description" content="espacios: AI automation for WhatsApp & Instagram. Design, simulate, deploy." />
+
+  <style>
+    :root {
+      --page-bg: #E6E9ED;
+      --text: rgba(15,15,16,.90);
+      --muted: rgba(90,90,90,.88);
+
+      --glass-bg: rgba(255,255,255,.32);
+      --glass-border: rgba(255,255,255,.58);
+      --glass-blur: 20px;
+
+      --shadow-xl: 0 45px 120px rgba(0,0,0,.12), 0 18px 50px rgba(0,0,0,.08);
+      --shadow-lg: 0 28px 70px rgba(0,0,0,.10), 0 10px 30px rgba(0,0,0,.06);
+      --shadow-md: 0 16px 40px rgba(0,0,0,.08);
+      --shadow-sm: 0 8px 24px rgba(0,0,0,.05);
+
+      --accent: #B6FF3B;
+      --accent-glow: rgba(182,255,59,.5);
+
+      --radius: 28px;
+      --radius-sm: 18px;
+      --pill: 999px;
+
+      --ease: cubic-bezier(.16, 1, .3, 1);
+      --ease-out: cubic-bezier(.0, 0, .2, 1);
+      --ease-bounce: cubic-bezier(.34, 1.56, .64, 1);
+
+      --font: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    
+    body {
+      font-family: var(--font);
+      color: var(--text);
+      background: var(--page-bg);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      perspective: 1400px;
+    }
+
+    /* ========================
+       AMBIENT BACKGROUND
+       ======================== */
+    .bg-ambient {
+      position: fixed;
+      inset: -35vh -35vw;
+      pointer-events: none;
+      z-index: -1;
+      background:
+        radial-gradient(1000px 600px at 10% 15%, rgba(182,255,59,.10), transparent 55%),
+        radial-gradient(900px 500px at 90% 20%, rgba(147,197,253,.14), transparent 55%),
+        radial-gradient(800px 450px at 50% 85%, rgba(196,181,253,.12), transparent 55%),
+        radial-gradient(1400px 800px at 50% 50%, rgba(255,255,255,.55), transparent 65%),
+        linear-gradient(165deg, #EEF1F5 0%, #E4E7EB 45%, #D9DEE4 100%);
+      animation: ambientDrift 22s ease-in-out infinite;
+    }
+
+    @keyframes ambientDrift {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+      33% { transform: translate3d(-1.2%, -0.8%, 0) scale(1.012) rotate(0.4deg); }
+      66% { transform: translate3d(0.8%, -1.2%, 0) scale(1.018) rotate(-0.3deg); }
+    }
+
+    /* ========================
+       CARD STACK CONTAINER
+       ======================== */
+    .stack-container {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .card-stack {
+      position: relative;
+      width: min(920px, 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    /* Side-by-side layout for chat + CRM on desktop */
+    .cards-row {
+      display: flex;
+      gap: 16px;
+      width: 100%;
+      align-items: flex-start;
+      opacity: 0;
+      transform: translateY(30px);
+      pointer-events: none;
+      transition: 
+        opacity .7s var(--ease),
+        transform .75s var(--ease);
+    }
+
+    /* ===============================
+       DECK MODE — one card at a time
+       other cards peek behind (~75%)
+       =============================== */
+    .cards-row.deck{ position:relative; }
+    .cards-row.deck .card{
+      position:relative;
+      transition: transform .9s var(--ease), opacity .9s var(--ease), filter .9s var(--ease);
+      will-change: transform, opacity;
+    }
+    .cards-row.deck .card.is-peek{
+      max-height:75%;
+      overflow:hidden;
+      opacity:.92;
+    }
+    .cards-row.deck.stage-select #cardDesigner{ z-index:3; transform: translateY(0) scale(1); }
+    .cards-row.deck.stage-select #cardChat{     z-index:2; transform: translateY(26px) scale(0.96); }
+    .cards-row.deck.stage-select #cardCrm{      z-index:1; transform: translateY(52px) scale(0.93); opacity:.85; }
+
+    .cards-row.deck.stage-chat #cardChat{       z-index:3; transform: translateY(0) scale(1); }
+    .cards-row.deck.stage-chat #cardDesigner{   z-index:2; transform: translateY(26px) scale(0.96); opacity:.92; }
+    .cards-row.deck.stage-chat #cardCrm{        z-index:1; transform: translateY(52px) scale(0.93); opacity:.85; }
+
+    .cards-row.deck.stage-crm #cardCrm{         z-index:3; transform: translateY(0) scale(1); opacity:1; }
+    .cards-row.deck.stage-crm #cardChat{        z-index:2; transform: translateY(26px) scale(0.96); opacity:.92; }
+    .cards-row.deck.stage-crm #cardDesigner{    z-index:1; transform: translateY(52px) scale(0.93); opacity:.85; }
+
+    @media (max-width: 800px){
+      .cards-row.deck{ flex-direction:column; gap:14px; }
+      .cards-row.deck .card.is-peek{ max-height:72%; }
+      .cards-row.deck.stage-select #cardChat,
+      .cards-row.deck.stage-chat #cardDesigner,
+      .cards-row.deck.stage-crm #cardChat{
+        transform: translateY(18px) scale(0.97);
+      }
+      .cards-row.deck.stage-select #cardCrm,
+      .cards-row.deck.stage-chat #cardCrm,
+      .cards-row.deck.stage-crm #cardDesigner{
+        transform: translateY(36px) scale(0.95);
+      }
+    }
+
+
+    .cards-row.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    /* ========================
+       LIQUID GLASS CARD BASE
+       ======================== */
+    .glass-card {
+      position: relative;
+      width: 100%;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
+      overflow: visible;
+      transform-origin: center top;
+      will-change: transform, opacity;
+    }
+
+    /* Holographic sheen */
+    .glass-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg,
+        rgba(255,255,255,.55) 0%,
+        rgba(255,255,255,.12) 28%,
+        rgba(147,197,253,.08) 45%,
+        rgba(182,255,59,.06) 55%,
+        rgba(196,181,253,.08) 70%,
+        rgba(255,255,255,.35) 100%
+      );
+      opacity: .75;
+      pointer-events: none;
+      animation: holoSheen 9s ease-in-out infinite;
+    }
+
+    @keyframes holoSheen {
+      0%, 100% { opacity: .6; }
+      50% { opacity: .85; }
+    }
+
+    /* Inner highlight */
+    .glass-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius);
+      pointer-events: none;
+      box-shadow:
+        inset 0 1px 1px rgba(255,255,255,.7),
+        inset 0 -1px 1px rgba(15,15,16,.03);
+    }
+
+    .glass-card > * { position: relative; z-index: 2; }
+
+    /* ========================
+       ROLE DESIGNER CARD
+       ======================== */
+    .card-designer {
+      z-index: 30;
+      width: min(440px, 100%);
+      transition: 
+        transform .7s var(--ease),
+        box-shadow .6s var(--ease),
+        opacity .5s var(--ease),
+        width .7s var(--ease),
+        margin-bottom .6s var(--ease);
+    }
+
+    .card-designer.is-docked {
+      position: relative;
+      margin-bottom: 20px;
+      transform: scale(0.78) translateZ(-30px);
+      width: 360px;
+      z-index: 10;
+      opacity: .9;
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      align-self: center;
+    }
+
+    .card-designer.is-docked:hover {
+      transform: scale(0.8) translateZ(-20px);
+      opacity: .95;
+      box-shadow: var(--shadow-md);
+    }
+
+    .card-designer.is-docked .designer-inner {
+      padding: 12px 14px;
+    }
+
+    .card-designer.is-docked .designer-header {
+      margin-bottom: 8px;
+    }
+
+    .card-designer.is-docked .designer-title {
+      font-size: 11px;
+    }
+
+    .card-designer.is-docked .role-floats {
+      display: none;
+    }
+
+    .designer-inner {
+      padding: 18px;
+      transition: padding .5s var(--ease);
+    }
+
+    .designer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .designer-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .designer-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: rgba(255,255,255,.55);
+      border: 1px solid rgba(255,255,255,.7);
+      padding: 5px;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 6px 18px rgba(0,0,0,.06);
+    }
+
+    .designer-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .designer-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      transition: font-size .4s var(--ease);
+    }
+
+    .designer-subtitle {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: var(--pill);
+      background: rgba(255,255,255,.45);
+      border: 1px solid rgba(255,255,255,.6);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: var(--pill);
+      background: var(--accent);
+      box-shadow: 
+        0 0 0 3px rgba(182,255,59,.18),
+        0 0 14px rgba(182,255,59,.35);
+      animation: livePulse 2.2s ease-in-out infinite;
+    }
+
+    @keyframes livePulse {
+      0%, 100% { transform: scale(1); opacity: .85; }
+      50% { transform: scale(1.18); opacity: 1; }
+    }
+
+    /* Role buttons */
+    .role-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.32);
+      border: 1px solid rgba(255,255,255,.5);
+      backdrop-filter: blur(12px);
+    }
+
+    .role-btn {
+      appearance: none;
+      border: 1px solid rgba(255,255,255,.6);
+      background: rgba(255,255,255,.48);
+      color: rgba(15,15,16,.78);
+      border-radius: var(--pill);
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      transition: 
+        transform .3s var(--ease),
+        box-shadow .3s var(--ease),
+        background .3s var(--ease),
+        border-color .3s var(--ease);
+      box-shadow: var(--shadow-sm);
+      user-select: none;
+    }
+
+    .role-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      background: rgba(255,255,255,.58);
+    }
+
+    .role-btn.is-active {
+      border-color: rgba(182,255,59,.5);
+      background: linear-gradient(135deg, rgba(182,255,59,.28), rgba(255,255,255,.52));
+      color: rgba(15,15,16,.92);
+      box-shadow: 
+        0 18px 45px rgba(182,255,59,.16),
+        var(--shadow-md);
+    }
+
+    /* Floating role heads */
+    .role-floats {
+      position: absolute;
+      inset: -30px;
+      pointer-events: none;
+      z-index: -1;
+      transition: opacity .4s var(--ease);
+    }
+
+    .role-float {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: var(--pill);
+      background: linear-gradient(145deg, rgba(255,255,255,.52), rgba(255,255,255,.25));
+      border: 1px solid rgba(255,255,255,.65);
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(14px);
+      opacity: 0;
+      transform: translateY(12px) scale(.95);
+      animation: floatIn .7s var(--ease) forwards;
+      transition: 
+        filter .35s var(--ease),
+        transform .35s var(--ease),
+        box-shadow .35s var(--ease);
+    }
+
+    .role-float .head {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--pill);
+      background: rgba(255,255,255,.6);
+      border: 1px solid rgba(255,255,255,.7);
+      display: grid;
+      place-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .role-float .head::after {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      background: radial-gradient(circle at 30% 30%, rgba(182,255,59,.25), transparent 55%);
+      filter: blur(8px);
+      opacity: .5;
+    }
+
+    .role-float svg {
+      width: 16px;
+      height: 16px;
+      fill: rgba(15,15,16,.58);
+      position: relative;
+      z-index: 1;
+    }
+
+    .role-float .label {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(15,15,16,.72);
+      white-space: nowrap;
+    }
+
+    .rf-1 { left: -45px; top: 20%; animation-delay: .1s; }
+    .rf-2 { right: -50px; top: 30%; animation-delay: .2s; }
+    .rf-3 { left: -40px; bottom: 25%; animation-delay: .3s; }
+    .rf-4 { right: -45px; bottom: 20%; animation-delay: .4s; }
+
+    @keyframes floatIn {
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .role-float.is-highlighted {
+      filter: drop-shadow(0 12px 24px rgba(182,255,59,.22));
+      transform: scale(1.04);
+      box-shadow: var(--shadow-lg);
+    }
+
+    /* ========================
+       CHAT CARD
+       ======================== */
+    .card-chat {
+      flex: 1.15;
+      min-width: 0;
+      z-index: 25;
+      box-shadow: var(--shadow-xl);
+    }
+
+    .card-chat.is-secondary {
+      z-index: 20;
+    }
+
+    .chat-inner {
+      padding: 16px;
+    }
+
+    .chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.48);
+      border: 1px solid rgba(255,255,255,.6);
+      margin-bottom: 12px;
+    }
+
+    .chat-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chat-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: var(--pill);
+      background: rgba(255,255,255,.6);
+      border: 1px solid rgba(255,255,255,.7);
+      padding: 4px;
+      display: grid;
+      place-items: center;
+    }
+
+    .chat-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .chat-meta b {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .chat-meta span {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .chat-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: var(--pill);
+      background: rgba(37,211,102,.9);
+      box-shadow: 0 0 0 3px rgba(37,211,102,.15), 0 0 10px rgba(37,211,102,.3);
+    }
+
+    /* Chat messages */
+    .chat-messages {
+      height: 320px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.25);
+      border: 1px solid rgba(255,255,255,.52);
+      backdrop-filter: blur(14px);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .messages-scroll {
+      flex: 1;
+      padding: 14px;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+
+    .messages-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .bubble-row {
+      display: flex;
+      margin: 8px 0;
+    }
+
+    .bubble {
+      max-width: 82%;
+      padding: 10px 13px;
+      border-radius: 16px;
+      font-size: 13px;
+      line-height: 1.45;
+      letter-spacing: -0.01em;
+      opacity: 0;
+      transform: translateY(10px) scale(0.97);
+      animation: bubbleIn .5s var(--ease) forwards;
+      white-space: pre-wrap;
+    }
+
+    .bubble.user {
+      margin-left: auto;
+      background: linear-gradient(135deg, rgba(220,248,198,.65), rgba(220,248,198,.42));
+      border: 1px solid rgba(37,211,102,.15);
+      color: rgba(15,15,16,.88);
+    }
+
+    .bubble.ai {
+      margin-right: auto;
+      background: rgba(255,255,255,.6);
+      border: 1px solid rgba(255,255,255,.55);
+      color: rgba(15,15,16,.88);
+    }
+
+    @keyframes bubbleIn {
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .typing-row {
+      display: flex;
+      margin: 10px 0;
+    }
+
+    .typing-indicator {
+      margin-right: auto;
+      padding: 10px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.58);
+      border: 1px solid rgba(255,255,255,.55);
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity .35s var(--ease), transform .35s var(--ease);
+    }
+
+    .typing-indicator.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: var(--pill);
+      background: rgba(15,15,16,.35);
+      animation: typingBounce 1.3s ease-in-out infinite;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: .15s; }
+    .typing-dot:nth-child(3) { animation-delay: .3s; }
+
+    @keyframes typingBounce {
+      0%, 100% { transform: translateY(0); opacity: .35; }
+      50% { transform: translateY(-4px); opacity: .8; }
+    }
+
+    /* Compose bar */
+    .compose-bar {
+      padding: 10px 12px;
+      border-top: 1px solid rgba(255,255,255,.45);
+      background: rgba(255,255,255,.25);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .compose-input {
+      flex: 1;
+      height: 40px;
+      border-radius: var(--pill);
+      background: rgba(255,255,255,.5);
+      border: 1px solid rgba(255,255,255,.65);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      font-size: 12px;
+      color: rgba(15,15,16,.55);
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .send-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: var(--pill);
+      border: 1px solid rgba(182,255,59,.45);
+      background: linear-gradient(135deg, rgba(182,255,59,.6), rgba(255,255,255,.38));
+      box-shadow: 0 14px 35px rgba(182,255,59,.16), var(--shadow-md);
+      display: grid;
+      place-items: center;
+    }
+
+    .send-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: rgba(15,15,16,.85);
+    }
+
+    /* ========================
+       CRM CARD
+       ======================== */
+    .card-crm {
+      flex: 1;
+      min-width: 0;
+      z-index: 20;
+      opacity: 0;
+      transform: translateX(20px) scale(0.95);
+      pointer-events: none;
+      transition: 
+        transform .8s var(--ease),
+        opacity .7s var(--ease);
+    }
+
+    .card-crm.is-visible {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .card-crm.is-active {
+      box-shadow: var(--shadow-xl);
+      z-index: 28;
+    }
+
+    .crm-inner {
+      padding: 14px;
+    }
+
+    .crm-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,.45);
+      margin-bottom: 12px;
+    }
+
+    .crm-title-block b {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .crm-title-block span {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* CRM Platform badges */
+    .crm-badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .crm-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: var(--pill);
+      background: rgba(255,255,255,.48);
+      border: 1px solid rgba(255,255,255,.62);
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(15,15,16,.68);
+      opacity: 0;
+      transform: translateY(8px) scale(0.9);
+      transition: 
+        opacity .5s var(--ease),
+        transform .5s var(--ease),
+        border-color .3s var(--ease),
+        box-shadow .3s var(--ease);
+    }
+
+    .crm-badge.is-visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .crm-badge.is-active {
+      border-color: rgba(182,255,59,.45);
+      box-shadow: 0 0 0 3px rgba(182,255,59,.12), 0 0 20px rgba(182,255,59,.18);
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: var(--pill);
+      background: rgba(15,15,16,.2);
+      transition: background .3s, box-shadow .3s;
+    }
+
+    .crm-badge.is-active .badge-dot {
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(182,255,59,.15), 0 0 12px rgba(182,255,59,.35);
+    }
+
+    /* CRM Fields */
+    .crm-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .crm-field {
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,.45);
+      border: 1px solid rgba(255,255,255,.58);
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+      transition: 
+        transform .4s var(--ease),
+        box-shadow .4s var(--ease),
+        border-color .3s var(--ease);
+    }
+
+    .crm-field.is-updated {
+      transform: translateY(-2px);
+      border-color: rgba(182,255,59,.45);
+      box-shadow: 
+        0 18px 45px rgba(182,255,59,.14),
+        var(--shadow-md);
+    }
+
+    .crm-field.is-updated::after {
+      content: "";
+      position: absolute;
+      inset: -50%;
+      background: radial-gradient(circle at 30% 30%, rgba(182,255,59,.25), transparent 60%);
+      filter: blur(14px);
+      opacity: .85;
+      animation: fieldFlash 1.1s var(--ease) forwards;
+    }
+
+    @keyframes fieldFlash {
+      0% { opacity: .85; transform: translateX(-8%) translateY(-8%); }
+      100% { opacity: 0; transform: translateX(8%) translateY(8%); }
+    }
+
+    .crm-field b {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      color: rgba(15,15,16,.52);
+      margin-bottom: 3px;
+    }
+
+    .crm-field span {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: rgba(15,15,16,.85);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: color .3s var(--ease);
+    }
+
+    .crm-field.is-updated span {
+      color: rgba(15,15,16,.95);
+    }
+
+    /* CRM Sync indicator */
+    .crm-sync {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-top: 10px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .sync-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 11px;
+      border-radius: var(--pill);
+      background: rgba(255,255,255,.45);
+      border: 1px solid rgba(255,255,255,.6);
+      transition: border-color .3s, box-shadow .3s;
+    }
+
+    .sync-chip.is-syncing {
+      border-color: rgba(182,255,59,.4);
+      box-shadow: 0 0 0 3px rgba(182,255,59,.1), 0 0 18px rgba(182,255,59,.15);
+    }
+
+    .sync-icon {
+      width: 16px;
+      height: 16px;
+      border-radius: var(--pill);
+      background: rgba(15,15,16,.1);
+      position: relative;
+      overflow: hidden;
+      transition: background .3s, box-shadow .3s;
+    }
+
+    .sync-chip.is-syncing .sync-icon {
+      background: rgba(182,255,59,.25);
+      box-shadow: 0 0 0 3px rgba(182,255,59,.12), 0 0 14px rgba(182,255,59,.25);
+    }
+
+    .sync-icon::after {
+      content: "";
+      position: absolute;
+      inset: -30%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.65), transparent 60%);
+      filter: blur(4px);
+      opacity: .55;
+    }
+
+    .sync-line {
+      flex: 1;
+      height: 2px;
+      border-radius: var(--pill);
+      background: linear-gradient(90deg, transparent, rgba(182,255,59,.5), transparent);
+      opacity: 0;
+      transition: opacity .4s;
+    }
+
+    .crm-sync.is-syncing .sync-line {
+      opacity: .85;
+      animation: syncSweep 1.4s ease-in-out infinite;
+    }
+
+    @keyframes syncSweep {
+      0%, 100% { transform: translateX(-10%); }
+      50% { transform: translateX(10%); }
+    }
+
+    /* ========================
+       RESPONSIVE
+       ======================== */
+    @media (max-width: 800px) {
+      .card-stack {
+        width: min(440px, 100%);
+      }
+
+      .cards-row {
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .card-crm {
+        transform: translateY(20px) scale(0.95);
+      }
+
+      .card-crm.is-visible {
+        transform: translateY(0) scale(1);
+      }
+
+      .card-designer.is-docked {
+        width: 300px;
+        transform: scale(0.72) translateZ(-30px);
+        margin-bottom: 16px;
+      }
+
+      .card-designer.is-docked:hover {
+        transform: scale(0.74) translateZ(-20px);
+      }
+
+      .role-floats {
+        display: none;
+      }
+
+      .chat-messages {
+        height: 300px;
+      }
+
+      .crm-fields {
+        grid-template-columns: 1fr;
+      
+      /* Mobile: when CRM appears, gently condense chat so both feel readable */
+      .card-chat {
+        transition: transform .7s var(--ease), box-shadow .7s var(--ease);
+      }
+      .card-chat.is-condensed {
+        transform: translateY(-2px) scale(0.98);
+        box-shadow: var(--shadow-lg);
+      }
+      .card-chat.is-condensed .chat-messages {
+        height: 220px;
+        transition: height .7s var(--ease);
+      }
+}
+    }
+
+    @media (max-width: 480px) {
+      .card-designer.is-docked {
+        width: 260px;
+        transform: scale(0.65) translateZ(-30px);
+        margin-bottom: 12px;
+      }
+
+      .card-designer.is-docked:hover {
+        transform: scale(0.67) translateZ(-20px);
+      }
+
+      .chat-messages {
+        height: 260px;
+      }
+    }
+
+    /* ========================
+       REDUCED MOTION
+       ======================== */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg-ambient" aria-hidden="true"></div>
+
+  <div class="stack-container">
+    <div class="card-stack">
+
+      <!-- CARD 1: ROLE DESIGNER (visible on load) -->
+      <div class="glass-card card-designer" id="cardDesigner">
+        <!-- Floating role heads -->
+        <div class="role-floats" aria-hidden="true">
+          <div class="role-float rf-1" data-float="Sales Agent">
+            <div class="head">
+              <svg viewBox="0 0 24 24"><path d="M12 12c2.761 0 5-2.239 5-5S14.761 2 12 2 7 4.239 7 7s2.239 5 5 5Zm0 2c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5Z"/></svg>
+            </div>
+            <div class="label">Sales</div>
+          </div>
+          <div class="role-float rf-2" data-float="Leasing Agent">
+            <div class="head">
+              <svg viewBox="0 0 24 24"><path d="M12 12c2.761 0 5-2.239 5-5S14.761 2 12 2 7 4.239 7 7s2.239 5 5 5Zm0 2c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5Z"/></svg>
+            </div>
+            <div class="label">Leasing</div>
+          </div>
+          <div class="role-float rf-3" data-float="Customer Support">
+            <div class="head">
+              <svg viewBox="0 0 24 24"><path d="M12 12c2.761 0 5-2.239 5-5S14.761 2 12 2 7 4.239 7 7s2.239 5 5 5Zm0 2c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5Z"/></svg>
+            </div>
+            <div class="label">Support</div>
+          </div>
+          <div class="role-float rf-4" data-float="Event Host">
+            <div class="head">
+              <svg viewBox="0 0 24 24"><path d="M12 12c2.761 0 5-2.239 5-5S14.761 2 12 2 7 4.239 7 7s2.239 5 5 5Zm0 2c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5Z"/></svg>
+            </div>
+            <div class="label">Events</div>
+          </div>
+        </div>
+
+        <div class="designer-inner">
+          <div class="designer-header">
+            <div class="designer-brand">
+              <div class="designer-logo">
+                <img src="https://storage.googleapis.com/espacios-data-bucket-2025/Gemini_Generated_Image_ehi1caehi1caehi1__1_-removebg-preview.png" alt="espacios" />
+              </div>
+              <div>
+                <div class="designer-title">Design your AI</div>
+                <div class="designer-subtitle" id="designerHint">Choose a role to start</div>
+              </div>
+            </div>
+            <div class="live-badge">
+              <span class="live-dot"></span>
+              Live
+            </div>
+          </div>
+
+          <div class="role-grid" role="tablist" aria-label="AI role selection">
+            <button class="role-btn" data-role="Sales Agent">Sales Agent</button>
+            <button class="role-btn" data-role="Leasing Agent">Leasing</button>
+            <button class="role-btn" data-role="Customer Support">Support</button>
+            <button class="role-btn" data-role="Event Host">Event Host</button>
+            <button class="role-btn" data-role="Marketing Coordinator">Marketing</button>
+            <button class="role-btn" data-role="Mortgage Advisor">Mortgage</button>
+            <button class="role-btn" data-role="Property Concierge">Concierge</button>
+            <button class="role-btn" data-role="Operations Admin">Ops Admin</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARDS ROW: Chat + CRM side by side (hidden initially) -->
+      <div class="cards-row deck stage-select" id="cardsRow">
+        <!-- CARD 2: CHAT -->
+        <div class="glass-card card-chat" id="cardChat">
+          <div class="chat-inner">
+            <div class="chat-header">
+              <div class="chat-brand">
+                <div class="chat-avatar">
+                  <img src="https://storage.googleapis.com/espacios-data-bucket-2025/Gemini_Generated_Image_ehi1caehi1caehi1__1_-removebg-preview.png" alt="espacios" />
+                </div>
+                <div class="chat-meta">
+                  <b id="chatTitle">espacios AI</b>
+                  <span id="chatRole">Sales Agent</span>
+                </div>
+              </div>
+              <div class="chat-status">
+                <span class="status-dot"></span>
+                <span id="chatStatus">Online</span>
+              </div>
+            </div>
+
+            <div class="chat-messages">
+              <div class="messages-scroll" id="messagesScroll"></div>
+              <div class="compose-bar">
+                <div class="compose-input" id="composeInput">Type a message...</div>
+                <div class="send-btn">
+                  <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 3: CRM -->
+        <div class="glass-card card-crm" id="cardCrm">
+          <div class="crm-inner">
+            <div class="crm-header">
+              <div class="crm-title-block">
+                <b>CRM Sync</b>
+                <span id="crmSubtitle">Waiting for lead data...</span>
+              </div>
+              <div class="crm-badges">
+                <div class="crm-badge" id="badgeHubspot"><span class="badge-dot"></span>HubSpot</div>
+                <div class="crm-badge" id="badgeZoho"><span class="badge-dot"></span>Zoho</div>
+                <div class="crm-badge" id="badgeBitrix"><span class="badge-dot"></span>Bitrix24</div>
+              </div>
+            </div>
+
+            <div class="crm-fields">
+              <div class="crm-field" id="fieldLead"><b>Lead</b><span>—</span></div>
+              <div class="crm-field" id="fieldStage"><b>Stage</b><span>—</span></div>
+              <div class="crm-field" id="fieldIntent"><b>Intent</b><span>—</span></div>
+              <div class="crm-field" id="fieldBudget"><b>Budget</b><span>—</span></div>
+              <div class="crm-field" id="fieldArea"><b>Area</b><span>—</span></div>
+              <div class="crm-field" id="fieldNext"><b>Next Step</b><span>—</span></div>
+            </div>
+
+            <div class="crm-sync" id="crmSync">
+              <div class="sync-chip" id="syncChip">
+                <span class="sync-icon"></span>
+                <span id="syncText">Idle</span>
+              </div>
+              <div class="sync-line"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      const sleep = ms => new Promise(r => setTimeout(r, ms));
+      const rand = (min, max) => Math.random() * (max - min) + min;
+      const shuffle = arr => arr.sort(() => Math.random() - 0.5);
+
+      // Subtle haptic feedback
+      const haptic = (pattern = [8]) => {
+        try {
+          if (navigator.vibrate) navigator.vibrate(pattern);
+        } catch(e) {}
+      };
+
+      // Elements
+      const cardDesigner = document.getElementById('cardDesigner');
+      const cardChat = document.getElementById('cardChat');
+      const cardCrm = document.getElementById('cardCrm');
+      const cardsRow = document.getElementById('cardsRow');
+
+      
+      // Deck behavior: focus one card; other cards peek behind (~75%)
+      function setStage(stage){
+        if(!cardsRow) return;
+        cardsRow.classList.remove('stage-select','stage-chat','stage-crm');
+        cardsRow.classList.add(stage);
+
+        [cardDesigner, cardChat, cardCrm].forEach(c=>{
+          if(!c) return;
+          c.classList.remove('is-peek');
+        });
+
+        if(stage === 'stage-select'){
+          cardChat?.classList.add('is-peek');
+          cardCrm?.classList.add('is-peek');
+        } else if(stage === 'stage-chat'){
+          cardDesigner?.classList.add('is-peek');
+          cardCrm?.classList.add('is-peek');
+        } else if(stage === 'stage-crm'){
+          cardChat?.classList.add('is-peek');
+          cardDesigner?.classList.add('is-peek');
+        }
+      }
+
+      setStage('stage-select');
+
+      // Optional: tap a peeking card to bring it forward
+      cardDesigner?.addEventListener('click', () => setStage('stage-select'));
+      cardChat?.addEventListener('click', () => setStage('stage-chat'));
+      cardCrm?.addEventListener('click', () => setStage('stage-crm'));
+const designerHint = document.getElementById('designerHint');
+      const roleButtons = Array.from(document.querySelectorAll('.role-btn'));
+      const roleFloats = Array.from(document.querySelectorAll('.role-float'));
+
+      const chatTitle = document.getElementById('chatTitle');
+      const chatRole = document.getElementById('chatRole');
+      const chatStatus = document.getElementById('chatStatus');
+      const messagesScroll = document.getElementById('messagesScroll');
+      const composeInput = document.getElementById('composeInput');
+
+      const crmSubtitle = document.getElementById('crmSubtitle');
+      const syncChip = document.getElementById('syncChip');
+      const syncText = document.getElementById('syncText');
+      const crmSync = document.getElementById('crmSync');
+
+      const badges = {
+        hubspot: document.getElementById('badgeHubspot'),
+        zoho: document.getElementById('badgeZoho'),
+        bitrix: document.getElementById('badgeBitrix')
+      };
+
+      const fields = {
+        lead: document.getElementById('fieldLead'),
+        stage: document.getElementById('fieldStage'),
+        intent: document.getElementById('fieldIntent'),
+        budget: document.getElementById('fieldBudget'),
+        area: document.getElementById('fieldArea'),
+        next: document.getElementById('fieldNext')
+      };
+
+      let runToken = 0;
+      let isFlowActive = false;
+
+      // Conversation flows
+      const flows = {
+        "Sales Agent": [
+          { type: "compose", text: "Hi, I'm interested in a 2BR in Dubai Hills." },
+          { type: "typing", ms: 1600 },
+          { type: "msg", text: "Hey! Love that area — quick one so I can shortlist properly: are you buying to live in or invest?" },
+          { type: "crm", updates: { stage: "New Lead", intent: "Property Inquiry", area: "Dubai Hills" }, note: "Lead captured" },
+          { type: "compose", text: "Investment property." },
+          { type: "typing", ms: 1700 },
+          { type: "msg", text: "Perfect. What budget range feels right — under 2M, 2–3M, or 3M+?" },
+          { type: "crm", updates: { stage: "Qualifying", intent: "Investor" }, note: "Intent updated" },
+          { type: "compose", text: "Around 2–3M." },
+          { type: "typing", ms: 1800 },
+          { type: "msg", text: "Got it. I'll line up 3 options with payment plans + rental estimates. Any preference on view?" },
+          { type: "crm", updates: { budget: "AED 2–3M", stage: "Qualified", next: "Send 3 options" }, note: "Budget captured" },
+        ],
+
+        "Leasing Agent": [
+          { type: "compose", text: "Hello, I'm looking for a 1BR in Business Bay." },
+          { type: "typing", ms: 1500 },
+          { type: "msg", text: "Sure thing! When are you planning to move in?" },
+          { type: "crm", updates: { stage: "New Lead", intent: "Rental Inquiry", area: "Business Bay" }, note: "Lead created" },
+          { type: "compose", text: "Next month ideally." },
+          { type: "typing", ms: 1600 },
+          { type: "msg", text: "Great timing. What monthly budget should I work within — 7–9k, 9–12k, or 12k+?" },
+          { type: "crm", updates: { stage: "Qualifying", next: "Confirm budget" }, note: "Timeline captured" },
+          { type: "compose", text: "9–12k works." },
+          { type: "typing", ms: 1700 },
+          { type: "msg", text: "Perfect. Any must-haves? Balcony, metro walk, furnished?" },
+          { type: "crm", updates: { budget: "AED 9–12k/mo", stage: "Qualified" }, note: "Budget captured" },
+        ],
+
+        "Customer Support": [
+          { type: "compose", text: "Hi, I didn't receive the brochure you promised." },
+          { type: "typing", ms: 1400 },
+          { type: "msg", text: "I've got you. Can you share the phone number you used so I can resend it?" },
+          { type: "crm", updates: { stage: "Support Ticket", intent: "Brochure Resend", next: "Verify + resend" }, note: "Ticket created" },
+          { type: "compose", text: "+971 5X XXX XXXX" },
+          { type: "typing", ms: 1500 },
+          { type: "msg", text: "Thanks! Resending now — I'll also attach a backup PDF here." },
+          { type: "crm", updates: { stage: "Resolved", next: "Confirm delivery" }, note: "Status updated" },
+        ],
+
+        "Event Host": [
+          { type: "compose", text: "Is there a property show this weekend?" },
+          { type: "typing", ms: 1400 },
+          { type: "msg", text: "Yes! How many guests will you be bringing?" },
+          { type: "crm", updates: { stage: "RSVP", intent: "Event Inquiry", next: "Guest count + time" }, note: "RSVP created" },
+          { type: "compose", text: "Just 2 of us." },
+          { type: "typing", ms: 1600 },
+          { type: "msg", text: "Perfect. Afternoon or evening slot?" },
+          { type: "crm", updates: { stage: "Qualifying", next: "Confirm timeslot" }, note: "Guest count captured" },
+          { type: "compose", text: "Evening please." },
+          { type: "typing", ms: 1700 },
+          { type: "msg", text: "Done! I'll send location + parking details shortly." },
+          { type: "crm", updates: { stage: "Confirmed", next: "Send location" }, note: "RSVP confirmed" },
+        ],
+
+        "Marketing Coordinator": [
+          { type: "compose", text: "Can you help follow up on yesterday's campaign leads?" },
+          { type: "typing", ms: 1500 },
+          { type: "msg", text: "Absolutely. Soft check-in or direct offer message?" },
+          { type: "crm", updates: { stage: "Workflow", intent: "Lead Follow-up", next: "Pick tone" }, note: "Workflow started" },
+          { type: "compose", text: "Soft check-in." },
+          { type: "typing", ms: 1700 },
+          { type: "msg", text: "Got it. I'll send a gentle message with one qualifying question. Which project should I prioritize?" },
+          { type: "crm", updates: { stage: "In Progress", next: "Confirm project" }, note: "Tone set" },
+        ],
+
+        "Mortgage Advisor": [
+          { type: "compose", text: "Can I qualify for a home loan in Dubai?" },
+          { type: "typing", ms: 1600 },
+          { type: "msg", text: "Let's find out! Are you salaried or self-employed?" },
+          { type: "crm", updates: { stage: "New Lead", intent: "Mortgage Inquiry", next: "Income profile" }, note: "Lead created" },
+          { type: "compose", text: "Salaried." },
+          { type: "typing", ms: 1700 },
+          { type: "msg", text: "Great. What's your approximate monthly income, and do you prefer fixed or variable rates?" },
+          { type: "crm", updates: { stage: "Qualifying", next: "Rate preference" }, note: "Profile captured" },
+        ],
+
+        "Property Concierge": [
+          { type: "compose", text: "We're relocating to Dubai — can you help shortlist areas?" },
+          { type: "typing", ms: 1600 },
+          { type: "msg", text: "Of course! Are you prioritizing commute, schools, or lifestyle?" },
+          { type: "crm", updates: { stage: "New Lead", intent: "Relocation", next: "Capture priorities" }, note: "Request created" },
+          { type: "compose", text: "Schools + quiet neighborhoods." },
+          { type: "typing", ms: 1800 },
+          { type: "msg", text: "Perfect. What's your budget range and bedroom requirement?" },
+          { type: "crm", updates: { stage: "Qualifying", next: "Budget + bedrooms" }, note: "Priorities captured" },
+        ],
+
+        "Operations Admin": [
+          { type: "compose", text: "Can you log today's WhatsApp inquiries into the CRM?" },
+          { type: "typing", ms: 1400 },
+          { type: "msg", text: "On it. I'll tag by intent and assign next steps. Who gets Dubai Hills leads?" },
+          { type: "crm", updates: { stage: "Ops Task", intent: "Data Entry", next: "Confirm routing" }, note: "Workflow started" },
+          { type: "compose", text: "Assign to Nadia." },
+          { type: "typing", ms: 1600 },
+          { type: "msg", text: "Done. Dubai Hills → Nadia. Pipeline is clean with stage + notes." },
+          { type: "crm", updates: { stage: "Rules Saved", next: "Auto-route active" }, note: "Rules applied" },
+        ],
+      };
+
+      // Helper: create element
+      function el(tag, cls) {
+        const n = document.createElement(tag);
+        if (cls) n.className = cls;
+        return n;
+      }
+
+      // Reset all state
+      function resetState() {
+        // Reset cards
+        cardDesigner.classList.remove('is-docked');
+        cardsRow.classList.remove('is-visible');
+        cardCrm.classList.remove('is-visible', 'is-active');
+
+        // Reset messages
+        messagesScroll.innerHTML = '';
+
+        // Reset CRM badges
+        Object.values(badges).forEach(b => {
+          b.classList.remove('is-visible', 'is-active');
+        });
+
+        // Reset CRM fields
+        Object.values(fields).forEach(f => {
+          f.querySelector('span').textContent = '—';
+          f.classList.remove('is-updated');
+        });
+
+        // Reset sync
+        crmSync.classList.remove('is-syncing');
+        syncChip.classList.remove('is-syncing');
+        syncText.textContent = 'Idle';
+        crmSubtitle.textContent = 'Waiting for lead data...';
+
+        // Reset compose
+        composeInput.textContent = 'Type a message...';
+
+        // Reset role buttons
+        roleButtons.forEach(b => b.classList.remove('is-active'));
+
+        // Reset floats
+        roleFloats.forEach(f => f.classList.remove('is-highlighted'));
+      }
+
+      // Scroll messages to bottom
+      function scrollToBottom() {
+        messagesScroll.scrollTop = messagesScroll.scrollHeight;
+      }
+
+      // Add bubble
+      function addBubble(from, text) {
+        const row = el('div', 'bubble-row');
+        const bub = el('div', 'bubble ' + (from === 'user' ? 'user' : 'ai'));
+        bub.textContent = text;
+        row.appendChild(bub);
+        messagesScroll.appendChild(row);
+        scrollToBottom();
+        return { row, bubble: bub };
+      }
+
+      // Typing indicator
+      let typingEl = null;
+
+      function showTyping(on) {
+        if (on && !typingEl) {
+          const row = el('div', 'typing-row');
+          const indicator = el('div', 'typing-indicator');
+          indicator.appendChild(el('span', 'typing-dot'));
+          indicator.appendChild(el('span', 'typing-dot'));
+          indicator.appendChild(el('span', 'typing-dot'));
+          row.appendChild(indicator);
+          messagesScroll.appendChild(row);
+          typingEl = { row, indicator };
+          requestAnimationFrame(() => indicator.classList.add('is-visible'));
+          scrollToBottom();
+        } else if (!on && typingEl) {
+          typingEl.indicator.classList.remove('is-visible');
+          const r = typingEl.row;
+          setTimeout(() => r.remove(), 250);
+          typingEl = null;
+        }
+      }
+
+      // Compose input typing effect
+      async function typeInCompose(text, token) {
+        composeInput.textContent = '';
+        for (let i = 0; i < text.length; i++) {
+          if (token !== runToken) return;
+          composeInput.textContent = text.slice(0, i + 1);
+          await sleep(25 + rand(15, 30));
+        }
+        await sleep(300 + rand(100, 200));
+      }
+
+      // Flash CRM field
+      function flashField(key) {
+        const f = fields[key];
+        if (!f) return;
+        f.classList.remove('is-updated');
+        void f.offsetWidth; // force reflow
+        f.classList.add('is-updated');
+        setTimeout(() => f.classList.remove('is-updated'), 1300);
+      }
+
+      // Update CRM field
+      function updateCRMField(key, value) {
+        const f = fields[key];
+        if (!f) return;
+        f.querySelector('span').textContent = value;
+        flashField(key);
+      }
+
+      // Staggered random CRM badge reveal
+      async function revealBadgesRandomly(token) {
+        const badgeKeys = shuffle(['hubspot', 'zoho', 'bitrix']);
+        
+        for (const key of badgeKeys) {
+          if (token !== runToken) return;
+          await sleep(rand(180, 380));
+          badges[key].classList.add('is-visible');
+        }
+      }
+
+      // Activate random CRM badge
+      function activateRandomBadge() {
+        const activeKeys = Object.keys(badges).filter(k => badges[k].classList.contains('is-visible'));
+        if (activeKeys.length === 0) return;
+        
+        // Deactivate all
+        Object.values(badges).forEach(b => b.classList.remove('is-active'));
+        
+        // Activate random one
+        const chosen = activeKeys[Math.floor(Math.random() * activeKeys.length)];
+        badges[chosen].classList.add('is-active');
+      }
+
+      // Set sync state
+      function setSyncing(on, text) {
+        if (on) {
+          crmSync.classList.add('is-syncing');
+          syncChip.classList.add('is-syncing');
+          syncText.textContent = text || 'Syncing...';
+        } else {
+          crmSync.classList.remove('is-syncing');
+          syncChip.classList.remove('is-syncing');
+          syncText.textContent = text || 'Synced';
+        }
+      }
+
+      // Apply CRM updates
+      async function applyCRMUpdates(updates, note, token) {
+        if (token !== runToken) return;
+
+        setSyncing(true, 'Syncing...');
+        activateRandomBadge();
+        crmSubtitle.textContent = note || 'Processing...';
+
+        // Sequential field updates with small delays
+        const keys = Object.keys(updates);
+        for (const key of keys) {
+          if (token !== runToken) return;
+          await sleep(rand(150, 300));
+          updateCRMField(key, updates[key]);
+          haptic([6]);
+        }
+
+        await sleep(600);
+        setSyncing(false, 'Synced');
+      }
+
+      // Highlight matching float
+      function highlightFloat(role) {
+        roleFloats.forEach(f => {
+          const match = f.dataset.float === role;
+          f.classList.toggle('is-highlighted', match);
+        });
+      }
+
+      // Main flow runner
+      async function runFlow(role) {
+        const token = ++runToken;
+        isFlowActive = true;
+
+        resetState();
+
+        // Set active button
+        roleButtons.forEach(b => {
+          b.classList.toggle('is-active', b.dataset.role === role);
+        });
+
+        highlightFloat(role);
+        designerHint.textContent = role;
+
+        await sleep(300);
+
+        // Phase 1: Dock the designer card, show cards row with chat
+        cardDesigner.classList.add('is-docked');
+        
+        await sleep(150);
+        
+        cardsRow.classList.add('is-visible');
+        chatRole.textContent = role;
+
+        await sleep(600);
+
+        const steps = flows[role] || [];
+        let crmRevealed = false;
+
+        for (const step of steps) {
+          if (token !== runToken) return;
+
+          if (step.type === 'compose') {
+            await typeInCompose(step.text, token);
+            if (token !== runToken) return;
+            addBubble('user', step.text);
+            composeInput.textContent = 'Type a message...';
+            haptic([6]);
+            await sleep(700 + rand(200, 400));
+          }
+
+          if (step.type === 'typing') {
+            showTyping(true);
+            await sleep(step.ms || 1500);
+            showTyping(false);
+            await sleep(200);
+          }
+
+          if (step.type === 'msg') {
+            addBubble('ai', step.text);
+            await sleep(800 + rand(200, 400));
+          }
+
+          if (step.type === 'crm') {
+            // Phase 2: Reveal CRM card on first CRM event
+            if (!crmRevealed) {
+              crmRevealed = true;
+              
+              cardCrm.classList.add('is-visible');
+              setStage('stage-crm');
+
+              // Mobile: keep the chat readable, then bring CRM in gently
+              if (window.matchMedia && window.matchMedia('(max-width: 800px)').matches) {
+                cardChat.classList.add('is-condensed');
+                setTimeout(() => {
+                  try { cardCrm.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch(e) {}
+                }, 350);
+              }
+              
+              // Set initial lead name
+              fields.lead.querySelector('span').textContent = 'New WhatsApp Lead';
+              flashField('lead');
+
+              // Staggered badge reveal
+              revealBadgesRandomly(token);
+
+              await sleep(600);
+            }
+
+            await applyCRMUpdates(step.updates, step.note, token);
+            await sleep(700);
+          }
+        }
+
+        // Flow complete
+        designerHint.textContent = role + ' • ready';
+        isFlowActive = false;
+      }
+
+      // Click on docked designer to switch roles
+      cardDesigner.addEventListener('click', (e) => {
+        if (!cardDesigner.classList.contains('is-docked')) return;
+        
+        // Undock and reset
+        runToken++;
+        isFlowActive = false;
+        resetState();
+        designerHint.textContent = 'Choose a role to start';
+      });
+
+      // Role button clicks
+      roleButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (isFlowActive && btn.classList.contains('is-active')) return;
+          
+          haptic([8]);
+          const role = btn.dataset.role;
+          runFlow(role);
+        });
+      });
+
+      // Init: everything is already in correct initial state via CSS
+    })();
+  </script>
+</body>
+</html>

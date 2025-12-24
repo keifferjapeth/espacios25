@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>espacios — Simulation (One Card at a Time)</title>
+  <meta name="description" content="espacios simulation: WhatsApp conversation → CRM sync. One card at a time, role-based flows, industry-accurate CRM modes." />
+  <style>
+    :root{
+      --page-bg:#E6E9ED;
+      --text:rgba(15,15,16,.90);
+      --muted:rgba(90,90,90,.88);
+
+      --glass-bg:rgba(255,255,255,.32);
+      --glass-border:rgba(255,255,255,.58);
+      --glass-blur:20px;
+
+      --shadow-xl:0 45px 120px rgba(0,0,0,.12),0 18px 50px rgba(0,0,0,.08);
+      --shadow-lg:0 28px 70px rgba(0,0,0,.10),0 10px 30px rgba(0,0,0,.06);
+      --shadow-md:0 16px 40px rgba(0,0,0,.08);
+      --shadow-sm:0 8px 24px rgba(0,0,0,.05);
+
+      --accent:#B6FF3B;
+      --accent-glow:rgba(182,255,59,.5);
+
+      --radius:28px;
+      --radius-sm:18px;
+      --pill:999px;
+
+      --ease:cubic-bezier(.16,1,.3,1);
+      --ease-out:cubic-bezier(.0,0,.2,1);
+
+      --font:system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter",sans-serif;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:var(--font);
+      color:var(--text);
+      background:var(--page-bg);
+      min-height:100vh;
+      overflow-x:hidden;
+      -webkit-font-smoothing:antialiased;
+      perspective:1400px;
+    }
+
+    /* Ambient background (subtle movement) */
+    .bg-ambient{
+      position:fixed;
+      inset:-35vh -35vw;
+      pointer-events:none;
+      z-index:-1;
+      background:
+        radial-gradient(1000px 600px at 10% 15%, rgba(182,255,59,.10), transparent 55%),
+        radial-gradient(900px 500px at 90% 20%, rgba(147,197,253,.14), transparent 55%),
+        radial-gradient(800px 450px at 50% 85%, rgba(196,181,253,.12), transparent 55%),
+        radial-gradient(1400px 800px at 50% 50%, rgba(255,255,255,.55), transparent 65%),
+        linear-gradient(165deg, #EEF1F5 0%, #E4E7EB 45%, #D9DEE4 100%);
+      animation:ambientDrift 22s ease-in-out infinite;
+    }
+    @keyframes ambientDrift{
+      0%,100%{transform:translate3d(0,0,0) scale(1) rotate(0deg)}
+      33%{transform:translate3d(-1.2%,-0.8%,0) scale(1.012) rotate(.4deg)}
+      66%{transform:translate3d(.8%,-1.2%,0) scale(1.018) rotate(-.3deg)}
+    }
+
+    .stack-container{
+      position:relative;
+      width:100%;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:40px 20px;
+    }
+
+    /* ===== Deck (one card at a time) ===== */
+    .deck{
+      position:relative;
+      width:min(980px, 100%);
+      height: 680px;
+      max-height: calc(100vh - 120px);
+    }
+    @media (max-width: 900px){
+      .deck{ height: 720px; }
+    }
+    @media (max-width: 520px){
+      .deck{ height: 760px; }
+    }
+
+    .glass-card{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      background:var(--glass-bg);
+      border:1px solid var(--glass-border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow-lg);
+      backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
+      overflow:hidden;
+      transform-origin:center top;
+      will-change: transform, opacity, filter, box-shadow;
+      transition:
+        transform .95s var(--ease),
+        opacity .95s var(--ease),
+        filter .95s var(--ease),
+        box-shadow .8s var(--ease);
+    }
+
+    /* Sheen */
+    .glass-card::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:var(--radius);
+      background:linear-gradient(135deg,
+        rgba(255,255,255,.55) 0%,
+        rgba(255,255,255,.12) 28%,
+        rgba(147,197,253,.08) 45%,
+        rgba(182,255,59,.06) 55%,
+        rgba(196,181,253,.08) 70%,
+        rgba(255,255,255,.35) 100%
+      );
+      opacity:.75;
+      pointer-events:none;
+      animation:holoSheen 9s ease-in-out infinite;
+    }
+    @keyframes holoSheen{ 0%,100%{opacity:.6} 50%{opacity:.85} }
+
+    /* Inner highlight */
+    .glass-card::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      border-radius:var(--radius);
+      pointer-events:none;
+      box-shadow: inset 0 1px 1px rgba(255,255,255,.7),
+                  inset 0 -1px 1px rgba(15,15,16,.03);
+    }
+    .glass-card > *{ position:relative; z-index:2; }
+
+    .deck .glass-card.is-behind{
+      opacity:.88;
+      filter:saturate(.98);
+      pointer-events:auto;
+      cursor:pointer;
+    }
+
+    /* Stages */
+    .deck.stage-designer #cardDesigner{
+      z-index:30;
+      transform: translateY(0) scale(1);
+      opacity:1;
+      pointer-events:auto;
+      cursor:default;
+      box-shadow:var(--shadow-xl);
+    }
+    .deck.stage-designer #cardChat{
+      z-index:20;
+      transform: translateY(26px) scale(.965);
+      opacity:.92;
+      pointer-events:auto;
+      cursor:pointer;
+      box-shadow:var(--shadow-lg);
+    }
+    .deck.stage-designer #cardCrm{
+      z-index:10;
+      transform: translateY(52px) scale(.935);
+      opacity:.86;
+      pointer-events:auto;
+      cursor:pointer;
+      box-shadow:var(--shadow-md);
+    }
+
+    .deck.stage-chat #cardChat{
+      z-index:30;
+      transform: translateY(0) scale(1);
+      opacity:1;
+      pointer-events:auto;
+      cursor:default;
+      box-shadow:var(--shadow-xl);
+    }
+    .deck.stage-chat #cardDesigner{
+      z-index:20;
+      transform: translateY(26px) scale(.965);
+      opacity:.92;
+      pointer-events:auto;
+      cursor:pointer;
+      box-shadow:var(--shadow-lg);
+    }
+    .deck.stage-chat #cardCrm{
+      z-index:10;
+      transform: translateY(52px) scale(.935);
+      opacity:.86;
+      pointer-events:auto;
+      cursor:pointer;
+      box-shadow:var(--shadow-md);
+    }
+
+    .deck.stage-crm #cardCrm{
+      z-index:30;
+      transform: translateY(0) scale(1);
+      opacity:1;
+      pointer-events:auto;
+      cursor:default;
+      box-shadow:var(--shadow-xl);
+    }
+    .deck.stage-crm #cardChat{
+      z-index:20;
+      transform: translateY(26px) scale(.965);
+      opacity:.92;
+      pointer-events:auto;
+      cursor:pointer;
+      box-shadow:var(--shadow-lg);
+    }
+    .deck.stage-crm #cardDesigner{
+      z-index:10;
+      transform: translateY(52px) scale(.935);
+      opacity:.86;
+      pointer-events:auto;
+      cursor:pointer;
+      box-shadow:var(--shadow-md);
+    }
+
+    /* ===== Designer card ===== */
+    .designer{
+      padding:18px;
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+
+    .designer-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px;
+      border-radius:20px;
+      background:rgba(255,255,255,.48);
+      border:1px solid rgba(255,255,255,.6);
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width: 0;
+    }
+    .brand-logo{
+      width:34px;height:34px;border-radius:10px;
+      background:rgba(255,255,255,.55);
+      border:1px solid rgba(255,255,255,.7);
+      padding:6px;
+      display:grid;place-items:center;
+      box-shadow:0 6px 18px rgba(0,0,0,.06);
+      flex: 0 0 auto;
+    }
+    .brand-logo img{ width:100%;height:100%;object-fit:contain; }
+    .brand-meta{ min-width:0; }
+    .brand-meta b{
+      display:block;
+      font-size:14px;
+      font-weight:800;
+      letter-spacing:-0.01em;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .brand-meta span{
+      display:block;
+      font-size:11px;
+      color:var(--muted);
+      margin-top:1px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 11px;
+      border-radius:var(--pill);
+      background:rgba(255,255,255,.45);
+      border:1px solid rgba(255,255,255,.6);
+      font-size:11px;
+      font-weight:650;
+      color:var(--muted);
+      flex: 0 0 auto;
+    }
+    .pill-dot{
+      width:7px;height:7px;border-radius:var(--pill);
+      background:var(--accent);
+      box-shadow:0 0 0 3px rgba(182,255,59,.18), 0 0 14px rgba(182,255,59,.35);
+      animation:pulse 2.2s ease-in-out infinite;
+    }
+    @keyframes pulse{ 0%,100%{transform:scale(1);opacity:.85} 50%{transform:scale(1.18);opacity:1} }
+
+    .role-grid{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      padding:12px;
+      border-radius:20px;
+      background:rgba(255,255,255,.32);
+      border:1px solid rgba(255,255,255,.5);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      overflow:auto;
+    }
+
+    .role-btn{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.6);
+      background:rgba(255,255,255,.48);
+      color:rgba(15,15,16,.78);
+      border-radius:var(--pill);
+      padding:10px 14px;
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:-0.01em;
+      cursor:pointer;
+      transition: transform .3s var(--ease), box-shadow .3s var(--ease), background .3s var(--ease), border-color .3s var(--ease);
+      box-shadow:var(--shadow-sm);
+      user-select:none;
+      white-space:nowrap;
+    }
+    .role-btn:hover{ transform:translateY(-2px); box-shadow:var(--shadow-md); background:rgba(255,255,255,.58); }
+    .role-btn.is-active{
+      border-color:rgba(182,255,59,.5);
+      background:linear-gradient(135deg, rgba(182,255,59,.28), rgba(255,255,255,.52));
+      color:rgba(15,15,16,.92);
+      box-shadow:0 18px 45px rgba(182,255,59,.16), var(--shadow-md);
+    }
+
+    .designer-foot{
+      margin-top:auto;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 14px;
+      border-radius:22px;
+      background:rgba(255,255,255,.28);
+      border:1px solid rgba(255,255,255,.45);
+    }
+    .hint{
+      font-size:12px;
+      color:rgba(15,15,16,.70);
+      line-height:1.35;
+    }
+    .reset-btn{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.6);
+      background:rgba(255,255,255,.46);
+      border-radius:var(--pill);
+      padding:10px 14px;
+      font-size:12px;
+      font-weight:750;
+      color:rgba(15,15,16,.78);
+      box-shadow:var(--shadow-sm);
+      cursor:pointer;
+      transition: transform .25s var(--ease), box-shadow .25s var(--ease), background .25s var(--ease);
+      white-space:nowrap;
+    }
+    .reset-btn:hover{ transform:translateY(-2px); box-shadow:var(--shadow-md); background:rgba(255,255,255,.56); }
+
+    /* ===== Chat card ===== */
+    .chat{
+      height:100%;
+      padding:16px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .chat-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px;
+      border-radius:20px;
+      background:rgba(255,255,255,.48);
+      border:1px solid rgba(255,255,255,.6);
+    }
+    .chat-brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+    }
+    .chat-avatar{
+      width:32px;height:32px;border-radius:var(--pill);
+      background:rgba(255,255,255,.6);
+      border:1px solid rgba(255,255,255,.7);
+      padding:5px;
+      display:grid;place-items:center;
+      flex:0 0 auto;
+    }
+    .chat-avatar img{ width:100%;height:100%;object-fit:contain; }
+    .chat-meta{ min-width:0; }
+    .chat-meta b{
+      display:block;
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:-0.01em;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .chat-meta span{
+      display:block;
+      font-size:11px;
+      color:var(--muted);
+      margin-top:1px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .chat-status{
+      display:flex;
+      align-items:center;
+      gap:7px;
+      font-size:11px;
+      color:var(--muted);
+      flex:0 0 auto;
+    }
+    .status-dot{
+      width:7px;height:7px;border-radius:var(--pill);
+      background:rgba(37,211,102,.9);
+      box-shadow:0 0 0 3px rgba(37,211,102,.15), 0 0 10px rgba(37,211,102,.3);
+    }
+
+    .chat-messages{
+      flex:1;
+      border-radius:22px;
+      background:rgba(255,255,255,.25);
+      border:1px solid rgba(255,255,255,.52);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      position:relative;
+    }
+
+    /* AI active glow (only during typing/new AI message) */
+    .chat-messages.ai-glow::before{
+      content:"";
+      position:absolute;
+      inset:-20%;
+      background:
+        radial-gradient(650px 320px at 15% 30%, rgba(37,211,102,.22), transparent 55%),
+        radial-gradient(560px 280px at 85% 75%, rgba(182,255,59,.16), transparent 60%);
+      filter: blur(18px);
+      opacity: .0;
+      transform: translateY(8px);
+      animation: aiGlow 1.1s var(--ease) forwards;
+      pointer-events:none;
+    }
+    @keyframes aiGlow{
+      0%{opacity:0; transform:translateY(10px)}
+      40%{opacity:.85; transform:translateY(0)}
+      100%{opacity:0; transform:translateY(-6px)}
+    }
+
+    .messages-scroll{
+      flex:1;
+      padding:14px;
+      overflow-y:auto;
+      scrollbar-width:none;
+    }
+    .messages-scroll::-webkit-scrollbar{ display:none; }
+
+    .bubble-row{ display:flex; margin:8px 0; }
+    .bubble{
+      max-width:82%;
+      padding:10px 13px;
+      border-radius:16px;
+      font-size:13px;
+      line-height:1.45;
+      letter-spacing:-0.01em;
+      opacity:0;
+      transform:translateY(10px) scale(.97);
+      animation:bubbleIn .55s var(--ease) forwards;
+      white-space:pre-wrap;
+    }
+    .bubble.user{
+      margin-left:auto;
+      background:linear-gradient(135deg, rgba(220,248,198,.65), rgba(220,248,198,.42));
+      border:1px solid rgba(37,211,102,.15);
+      color:rgba(15,15,16,.88);
+    }
+    .bubble.ai{
+      margin-right:auto;
+      background:rgba(255,255,255,.62);
+      border:1px solid rgba(255,255,255,.55);
+      color:rgba(15,15,16,.88);
+    }
+    @keyframes bubbleIn{ to{opacity:1; transform:translateY(0) scale(1)} }
+
+    .typing-row{ display:flex; margin:10px 0; }
+    .typing-indicator{
+      margin-right:auto;
+      padding:10px 14px;
+      border-radius:16px;
+      background:rgba(255,255,255,.58);
+      border:1px solid rgba(255,255,255,.55);
+      display:flex;
+      gap:5px;
+      align-items:center;
+      opacity:0;
+      transform:translateY(8px);
+      transition: opacity .35s var(--ease), transform .35s var(--ease);
+    }
+    .typing-indicator.is-visible{ opacity:1; transform:translateY(0); }
+    .typing-dot{
+      width:6px;height:6px;border-radius:var(--pill);
+      background:rgba(15,15,16,.35);
+      animation:typingBounce 1.3s ease-in-out infinite;
+    }
+    .typing-dot:nth-child(2){ animation-delay:.15s }
+    .typing-dot:nth-child(3){ animation-delay:.3s }
+    @keyframes typingBounce{
+      0%,100%{transform:translateY(0);opacity:.35}
+      50%{transform:translateY(-4px);opacity:.8}
+    }
+
+    .compose-bar{
+      padding:10px 12px;
+      border-top:1px solid rgba(255,255,255,.45);
+      background:rgba(255,255,255,.25);
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .compose-input{
+      flex:1;
+      height:40px;
+      border-radius:var(--pill);
+      background:rgba(255,255,255,.5);
+      border:1px solid rgba(255,255,255,.65);
+      box-shadow:var(--shadow-sm);
+      display:flex;
+      align-items:center;
+      padding:0 14px;
+      font-size:12px;
+      color:rgba(15,15,16,.55);
+      overflow:hidden;
+      white-space:nowrap;
+      text-overflow:ellipsis;
+    }
+    .send-btn{
+      width:42px;height:42px;border-radius:var(--pill);
+      border:1px solid rgba(182,255,59,.45);
+      background:linear-gradient(135deg, rgba(182,255,59,.6), rgba(255,255,255,.38));
+      box-shadow:0 14px 35px rgba(182,255,59,.16), var(--shadow-md);
+      display:grid;place-items:center;
+      flex: 0 0 auto;
+    }
+    .send-btn svg{ width:18px;height:18px; fill:rgba(15,15,16,.85); }
+
+    /* ===== CRM card ===== */
+    .crm{
+      height:100%;
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .crm-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding-bottom:12px;
+      border-bottom:1px solid rgba(255,255,255,.45);
+    }
+    .crm-title b{
+      display:block;
+      font-size:13px;
+      font-weight:850;
+      letter-spacing:-0.01em;
+    }
+    .crm-title span{
+      display:block;
+      font-size:11px;
+      color:var(--muted);
+      margin-top:1px;
+    }
+    .crm-brand{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 10px;
+      border-radius:var(--pill);
+      background:rgba(255,255,255,.48);
+      border:1px solid rgba(255,255,255,.62);
+      font-size:10px;
+      font-weight:800;
+      color:rgba(15,15,16,.68);
+      box-shadow:var(--shadow-sm);
+      white-space:nowrap;
+      flex: 0 0 auto;
+      max-width: 52%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .crm-brand img{ width:16px;height:16px; object-fit:contain; }
+
+    .crm-fields{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top: 2px;
+      overflow:auto;
+      padding-right: 2px;
+    }
+    @media (max-width: 620px){
+      .crm-fields{ grid-template-columns: 1fr; }
+    }
+
+    .crm-field{
+      padding:10px 12px;
+      border-radius:var(--radius-sm);
+      background:rgba(255,255,255,.45);
+      border:1px solid rgba(255,255,255,.58);
+      box-shadow:var(--shadow-sm);
+      position:relative;
+      overflow:hidden;
+      transition: transform .4s var(--ease), box-shadow .4s var(--ease), border-color .3s var(--ease);
+      min-height: 56px;
+    }
+    .crm-field.is-updated{
+      transform:translateY(-2px);
+      border-color:rgba(182,255,59,.45);
+      box-shadow:0 18px 45px rgba(182,255,59,.14), var(--shadow-md);
+    }
+    .crm-field.is-updated::after{
+      content:"";
+      position:absolute;
+      inset:-50%;
+      background:radial-gradient(circle at 30% 30%, rgba(182,255,59,.25), transparent 60%);
+      filter:blur(14px);
+      opacity:.85;
+      animation:fieldFlash 1.1s var(--ease) forwards;
+    }
+    @keyframes fieldFlash{
+      0%{opacity:.85; transform:translateX(-8%) translateY(-8%)}
+      100%{opacity:0; transform:translateX(8%) translateY(8%)}
+    }
+    .crm-field b{
+      display:block;
+      font-size:10px;
+      font-weight:800;
+      letter-spacing:.03em;
+      text-transform:uppercase;
+      color:rgba(15,15,16,.52);
+      margin-bottom:3px;
+    }
+    .crm-field span{
+      display:block;
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:-0.01em;
+      color:rgba(15,15,16,.85);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .crm-sync{
+      margin-top:auto;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding-top: 10px;
+      color:var(--muted);
+      font-size:11px;
+    }
+    .sync-chip{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 11px;
+      border-radius:var(--pill);
+      background:rgba(255,255,255,.45);
+      border:1px solid rgba(255,255,255,.6);
+      transition:border-color .3s, box-shadow .3s;
+    }
+    .sync-chip.is-syncing{
+      border-color:rgba(182,255,59,.4);
+      box-shadow:0 0 0 3px rgba(182,255,59,.1), 0 0 18px rgba(182,255,59,.15);
+    }
+    .sync-icon{
+      width:16px;height:16px;border-radius:var(--pill);
+      background:rgba(15,15,16,.1);
+      position:relative;
+      overflow:hidden;
+      transition:background .3s, box-shadow .3s;
+    }
+    .sync-chip.is-syncing .sync-icon{
+      background:rgba(182,255,59,.25);
+      box-shadow:0 0 0 3px rgba(182,255,59,.12), 0 0 14px rgba(182,255,59,.25);
+    }
+    .sync-icon::after{
+      content:"";
+      position:absolute;
+      inset:-30%;
+      background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.65), transparent 60%);
+      filter:blur(4px);
+      opacity:.55;
+    }
+    .sync-line{
+      flex:1;
+      height:2px;
+      border-radius:var(--pill);
+      background:linear-gradient(90deg, transparent, rgba(182,255,59,.5), transparent);
+      opacity:0;
+      transition:opacity .4s;
+    }
+    .crm-sync.is-syncing .sync-line{
+      opacity:.85;
+      animation:syncSweep 1.4s ease-in-out infinite;
+    }
+    @keyframes syncSweep{
+      0%,100%{transform:translateX(-10%)}
+      50%{transform:translateX(10%)}
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      *,*::before,*::after{
+        animation-duration:.01ms !important;
+        animation-iteration-count:1 !important;
+        transition-duration:.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-ambient" aria-hidden="true"></div>
+
+  <div class="stack-container">
+    <div class="deck stage-designer" id="deck">
+
+      <!-- CARD 1: DESIGNER -->
+      <div class="glass-card" id="cardDesigner" aria-label="Designer card">
+        <div class="designer">
+          <div class="designer-top">
+            <div class="brand">
+              <div class="brand-logo" title="espacios">
+                <img src="https://storage.googleapis.com/espacios-data-bucket-2025/Gemini_Generated_Image_ehi1caehi1caehi1__1_-removebg-preview.png" alt="espacios logo">
+              </div>
+              <div class="brand-meta">
+                <b>Design your AI</b>
+                <span id="designerHint">Choose a role to start</span>
+              </div>
+            </div>
+            <div class="pill"><span class="pill-dot"></span>Live</div>
+          </div>
+
+          <div class="role-grid" role="tablist" aria-label="AI role selection">
+            <!-- Real estate + ops -->
+            <button class="role-btn" data-role="Sales Agent">Sales Agent</button>
+            <button class="role-btn" data-role="Leasing Agent">Leasing Agent</button>
+            <button class="role-btn" data-role="Property Concierge">Property Concierge</button>
+            <button class="role-btn" data-role="Mortgage Advisor">Mortgage Advisor</button>
+            <button class="role-btn" data-role="Operations Admin">Operations Admin</button>
+
+            <!-- Support + events + marketing -->
+            <button class="role-btn" data-role="Customer Support">Customer Support</button>
+            <button class="role-btn" data-role="Event Host">Event Host</button>
+            <button class="role-btn" data-role="Marketing Coordinator">Marketing Coordinator</button>
+
+            <!-- Commerce -->
+            <button class="role-btn" data-role="Order Assistant (Shopify)">Order Assistant (Shopify)</button>
+            <button class="role-btn" data-role="Restaurant Orders">Restaurant Orders</button>
+
+            <!-- Appointments + bookings -->
+            <button class="role-btn" data-role="Appointment Booker">Appointment Booker</button>
+            <button class="role-btn" data-role="Hotel Booking">Hotel Booking</button>
+          </div>
+
+          <div class="designer-foot">
+            <div class="hint" id="designerFootHint">
+              Pick a role, then watch WhatsApp capture details and sync the right CRM model.
+            </div>
+            <button class="reset-btn" id="resetBtn">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 2: CHAT (WhatsApp) -->
+      <div class="glass-card" id="cardChat" aria-label="Chat card">
+        <div class="chat">
+          <div class="chat-header">
+            <div class="chat-brand">
+              <div class="chat-avatar" title="WhatsApp">
+                <img id="chatAvatarImg" src="https://cdn.simpleicons.org/whatsapp/25D366" alt="WhatsApp logo">
+              </div>
+              <div class="chat-meta">
+                <b id="chatTitle">WhatsApp AI</b>
+                <span id="chatRole">—</span>
+              </div>
+            </div>
+            <div class="chat-status">
+              <span class="status-dot"></span>
+              <span id="chatStatus">Online</span>
+            </div>
+          </div>
+
+          <div class="chat-messages" id="chatMessagesBox">
+            <div class="messages-scroll" id="messagesScroll"></div>
+            <div class="compose-bar">
+              <div class="compose-input" id="composeInput">Type a message...</div>
+              <div class="send-btn" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 3: CRM -->
+      <div class="glass-card" id="cardCrm" aria-label="CRM card">
+        <div class="crm">
+          <div class="crm-header">
+            <div class="crm-title">
+              <b id="crmTitle">CRM</b>
+              <span id="crmSubtitle">Waiting for lead data...</span>
+            </div>
+            <div class="crm-brand" id="crmBrandChip" title="CRM platform">
+              <img id="crmBrandLogo" src="https://cdn.simpleicons.org/hubspot/FF7A59" alt="CRM logo">
+              <span id="crmBrandName">HubSpot</span>
+            </div>
+          </div>
+
+          <div class="crm-fields" id="crmFields"></div>
+
+          <div class="crm-sync" id="crmSync">
+            <div class="sync-chip" id="syncChip">
+              <span class="sync-icon"></span>
+              <span id="syncText">Idle</span>
+            </div>
+            <div class="sync-line"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      'use strict';
+
+      const sleep = (ms)=>new Promise(r=>setTimeout(r, ms));
+      const rand = (min,max)=>Math.random()*(max-min)+min;
+
+      const haptic = (pattern=[8])=>{
+        try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){}
+      };
+
+      // Elements
+      const deck = document.getElementById('deck');
+      const cardDesigner = document.getElementById('cardDesigner');
+      const cardChat = document.getElementById('cardChat');
+      const cardCrm = document.getElementById('cardCrm');
+
+      const designerHint = document.getElementById('designerHint');
+      const designerFootHint = document.getElementById('designerFootHint');
+      const resetBtn = document.getElementById('resetBtn');
+      const roleButtons = Array.from(document.querySelectorAll('.role-btn'));
+
+      const chatRole = document.getElementById('chatRole');
+      const messagesScroll = document.getElementById('messagesScroll');
+      const composeInput = document.getElementById('composeInput');
+      const chatMessagesBox = document.getElementById('chatMessagesBox');
+
+      const crmTitle = document.getElementById('crmTitle');
+      const crmSubtitle = document.getElementById('crmSubtitle');
+      const crmBrandLogo = document.getElementById('crmBrandLogo');
+      const crmBrandName = document.getElementById('crmBrandName');
+      const crmFields = document.getElementById('crmFields');
+
+      const crmSync = document.getElementById('crmSync');
+      const syncChip = document.getElementById('syncChip');
+      const syncText = document.getElementById('syncText');
+
+      // Stage control
+      function setStage(stage){
+        deck.classList.remove('stage-designer','stage-chat','stage-crm');
+        deck.classList.add(stage);
+      }
+
+      // Click behind cards to bring forward (one card at a time)
+      cardDesigner.addEventListener('click', ()=> setStage('stage-designer'));
+      cardChat.addEventListener('click', ()=> setStage('stage-chat'));
+      cardCrm.addEventListener('click', ()=> setStage('stage-crm'));
+
+      // CRM modes (industry-accurate)
+      const CRM_MODES = {
+        pipeline: {
+          title: 'Pipeline CRM',
+          brand: { name: 'HubSpot', logo: 'https://cdn.simpleicons.org/hubspot/FF7A59' },
+          fields: [
+            ['lead','Lead'],
+            ['stage','Stage'],
+            ['intent','Intent'],
+            ['budget','Budget'],
+            ['area','Area'],
+            ['next','Next Step'],
+          ]
+        },
+        rental: {
+          title: 'Leasing CRM',
+          brand: { name: 'Zoho CRM', logo: 'https://cdn.simpleicons.org/zoho/EA4335' },
+          fields: [
+            ['lead','Tenant'],
+            ['stage','Status'],
+            ['area','Area'],
+            ['budget','Budget'],
+            ['movein','Move-in'],
+            ['next','Next Step'],
+          ]
+        },
+        ticket: {
+          title: 'Support Desk',
+          brand: { name: 'Zendesk', logo: 'https://cdn.simpleicons.org/zendesk/03363D' },
+          fields: [
+            ['ticket','Ticket'],
+            ['issue','Issue'],
+            ['priority','Priority'],
+            ['status','Status'],
+            ['assigned','Assigned'],
+            ['next','Next Step'],
+          ]
+        },
+        rsvp: {
+          title: 'Event RSVP',
+          brand: { name: 'RSVP CRM', logo: 'https://cdn.simpleicons.org/eventbrite/F05537' },
+          fields: [
+            ['guest','Guest'],
+            ['count','Guests'],
+            ['slot','Time Slot'],
+            ['event','Event'],
+            ['status','Status'],
+            ['next','Next Step'],
+          ]
+        },
+        campaign: {
+          title: 'Campaign CRM',
+          brand: { name: 'Meta + CRM', logo: 'https://cdn.simpleicons.org/meta/0866FF' },
+          fields: [
+            ['campaign','Campaign'],
+            ['source','Source'],
+            ['segment','Segment'],
+            ['status','Status'],
+            ['last','Last Touch'],
+            ['next','Next Step'],
+          ]
+        },
+        finance: {
+          title: 'Case CRM',
+          brand: { name: 'Finance CRM', logo: 'https://cdn.simpleicons.org/stripe/635BFF' },
+          fields: [
+            ['applicant','Applicant'],
+            ['profile','Profile'],
+            ['income','Income'],
+            ['status','Status'],
+            ['docs','Documents'],
+            ['next','Next Step'],
+          ]
+        },
+        ops: {
+          title: 'Ops Workflow',
+          brand: { name: 'Bitrix24', logo: 'https://cdn.simpleicons.org/bitrix24/2FC6F6' },
+          fields: [
+            ['task','Task'],
+            ['owner','Owner'],
+            ['rules','Routing'],
+            ['status','Status'],
+            ['log','Log'],
+            ['next','Next Step'],
+          ]
+        },
+        commerce: {
+          title: 'Orders',
+          brand: { name: 'Shopify', logo: 'https://cdn.simpleicons.org/shopify/95BF47' },
+          fields: [
+            ['order','Order'],
+            ['items','Items'],
+            ['total','Total'],
+            ['payment','Payment'],
+            ['address','Delivery'],
+            ['status','Status'],
+          ]
+        },
+        appointment: {
+          title: 'Appointments',
+          brand: { name: 'Booking CRM', logo: 'https://cdn.simpleicons.org/googlecalendar/4285F4' },
+          fields: [
+            ['name','Name'],
+            ['service','Service'],
+            ['time','Time'],
+            ['status','Status'],
+            ['notes','Notes'],
+            ['next','Next Step'],
+          ]
+        },
+        booking: {
+          title: 'Bookings',
+          brand: { name: 'Hospitality CRM', logo: 'https://cdn.simpleicons.org/bookingdotcom/003580' },
+          fields: [
+            ['guest','Guest'],
+            ['dates','Dates'],
+            ['room','Room'],
+            ['rate','Rate'],
+            ['status','Status'],
+            ['next','Next Step'],
+          ]
+        }
+      };
+
+      // Role -> CRM mode
+      const ROLE_TO_MODE = {
+        'Sales Agent': 'pipeline',
+        'Property Concierge': 'pipeline',
+        'Leasing Agent': 'rental',
+        'Customer Support': 'ticket',
+        'Event Host': 'rsvp',
+        'Marketing Coordinator': 'campaign',
+        'Mortgage Advisor': 'finance',
+        'Operations Admin': 'ops',
+        'Order Assistant (Shopify)': 'commerce',
+        'Restaurant Orders': 'commerce',
+        'Appointment Booker': 'appointment',
+        'Hotel Booking': 'booking',
+      };
+
+      // Runtime state
+      let runToken = 0;
+      let isFlowActive = false;
+      let activeMode = 'pipeline';
+      let fieldEls = {}; // key -> element
+
+      // Build CRM fields for selected mode
+      function setCrmMode(modeKey){
+        const m = CRM_MODES[modeKey] || CRM_MODES.pipeline;
+        activeMode = modeKey;
+
+        crmTitle.textContent = m.title;
+        crmBrandName.textContent = m.brand.name;
+        crmBrandLogo.src = m.brand.logo;
+
+        // Rebuild fields
+        crmFields.innerHTML = '';
+        fieldEls = {};
+        m.fields.forEach(([key,label])=>{
+          const wrap = document.createElement('div');
+          wrap.className = 'crm-field';
+          wrap.dataset.key = key;
+          wrap.innerHTML = '<b></b><span>—</span>';
+          wrap.querySelector('b').textContent = label;
+          crmFields.appendChild(wrap);
+          fieldEls[key] = wrap;
+        });
+
+        // Reset subtitle/sync
+        crmSubtitle.textContent = 'Waiting for lead data...';
+        setSyncing(false, 'Idle');
+      }
+
+      function setSyncing(on, text){
+        if(on){
+          crmSync.classList.add('is-syncing');
+          syncChip.classList.add('is-syncing');
+          syncText.textContent = text || 'Syncing...';
+        }else{
+          crmSync.classList.remove('is-syncing');
+          syncChip.classList.remove('is-syncing');
+          syncText.textContent = text || 'Synced';
+        }
+      }
+
+      function resetState(){
+        messagesScroll.innerHTML = '';
+        composeInput.textContent = 'Type a message...';
+        roleButtons.forEach(b=>b.classList.remove('is-active'));
+        designerHint.textContent = 'Choose a role to start';
+        designerFootHint.textContent = 'Pick a role, then watch WhatsApp capture details and sync the right CRM model.';
+        setStage('stage-designer');
+        setCrmMode('pipeline');
+      }
+
+      function scrollToBottom(){
+        messagesScroll.scrollTop = messagesScroll.scrollHeight;
+      }
+
+      function addBubble(from, text){
+        const row = document.createElement('div');
+        row.className = 'bubble-row';
+        const bub = document.createElement('div');
+        bub.className = 'bubble ' + (from === 'user' ? 'user' : 'ai');
+        bub.textContent = text;
+        row.appendChild(bub);
+        messagesScroll.appendChild(row);
+        scrollToBottom();
+      }
+
+      // AI glow (brief)
+      function pulseAiGlow(){
+        chatMessagesBox.classList.remove('ai-glow');
+        // force reflow
+        void chatMessagesBox.offsetWidth;
+        chatMessagesBox.classList.add('ai-glow');
+      }
+
+      // Typing indicator
+      let typingEl = null;
+      function showTyping(on){
+        if(on && !typingEl){
+          const row = document.createElement('div');
+          row.className = 'typing-row';
+          const indicator = document.createElement('div');
+          indicator.className = 'typing-indicator';
+          indicator.innerHTML = '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>';
+          row.appendChild(indicator);
+          messagesScroll.appendChild(row);
+          typingEl = {row, indicator};
+          requestAnimationFrame(()=>indicator.classList.add('is-visible'));
+          scrollToBottom();
+          pulseAiGlow();
+        }else if(!on && typingEl){
+          typingEl.indicator.classList.remove('is-visible');
+          const r = typingEl.row;
+          setTimeout(()=>{ try{ r.remove(); }catch(e){} }, 250);
+          typingEl = null;
+        }
+      }
+
+      async function typeInCompose(text, token){
+        composeInput.textContent = '';
+        for(let i=0;i<text.length;i++){
+          if(token !== runToken) return;
+          composeInput.textContent = text.slice(0, i+1);
+          await sleep(26 + rand(18, 34));
+        }
+        await sleep(320 + rand(120, 220));
+      }
+
+      function flashField(key){
+        const f = fieldEls[key];
+        if(!f) return;
+        f.classList.remove('is-updated');
+        void f.offsetWidth;
+        f.classList.add('is-updated');
+        setTimeout(()=>f.classList.remove('is-updated'), 1300);
+      }
+
+      function updateCRMField(key, value){
+        const f = fieldEls[key];
+        if(!f) return;
+        f.querySelector('span').textContent = value;
+        flashField(key);
+      }
+
+      async function applyCRMUpdates(updates, note, token){
+        if(token !== runToken) return;
+        setSyncing(true, 'Syncing...');
+        crmSubtitle.textContent = note || 'Processing...';
+
+        const keys = Object.keys(updates || {});
+        for(const k of keys){
+          if(token !== runToken) return;
+          await sleep(rand(160, 300));
+          updateCRMField(k, updates[k]);
+          haptic([6]);
+        }
+
+        await sleep(520);
+        setSyncing(false, 'Synced');
+      }
+
+      // Flows (role realistic)
+      const flows = {
+        'Sales Agent': [
+          {type:'compose', text:"Hi, I'm interested in a 2BR in Dubai Hills."},
+          {type:'typing', ms:1600},
+          {type:'ai', text:"Hey! Love that area — are you buying to live in or invest?"},
+          {type:'crm', note:"Lead captured", updates:{lead:'New WhatsApp Lead', stage:'New', intent:'Property Inquiry', area:'Dubai Hills'}},
+
+          {type:'compose', text:"Investment."},
+          {type:'typing', ms:1700},
+          {type:'ai', text:"Perfect. What budget range feels right — under 2M, 2–3M, or 3M+?"},
+          {type:'crm', note:"Intent updated", updates:{stage:'Qualifying', intent:'Investor'}},
+
+          {type:'compose', text:"Around 2–3M."},
+          {type:'typing', ms:1800},
+          {type:'ai', text:"Got it. I’ll line up 3 options with payment plans + rental estimates. Any preference on view?"},
+          {type:'crm', note:"Budget captured", updates:{budget:'AED 2–3M', stage:'Qualified', next:'Send 3 options'}},
+        ],
+
+        'Leasing Agent': [
+          {type:'compose', text:"Hello, I'm looking for a 1BR in Business Bay."},
+          {type:'typing', ms:1500},
+          {type:'ai', text:"Sure. When are you planning to move in?"},
+          {type:'crm', note:"Inquiry created", updates:{lead:'New Tenant', stage:'New', area:'Business Bay'}},
+
+          {type:'compose', text:"Next month ideally."},
+          {type:'typing', ms:1600},
+          {type:'ai', text:"Great. What budget should I work within — 7–9k, 9–12k, or 12k+ per month?"},
+          {type:'crm', note:"Timeline captured", updates:{movein:'Next month', stage:'Qualifying', next:'Confirm budget'}},
+
+          {type:'compose', text:"9–12k works."},
+          {type:'typing', ms:1700},
+          {type:'ai', text:"Perfect. Furnished or unfurnished — and do you want a metro walk?"},
+          {type:'crm', note:"Budget captured", updates:{budget:'AED 9–12k/mo', stage:'Qualified'}},
+        ],
+
+        'Customer Support': [
+          {type:'compose', text:"Hi, I didn't receive the brochure."},
+          {type:'typing', ms:1400},
+          {type:'ai', text:"I’ve got you. What’s the phone number you used so I can resend it?"},
+          {type:'crm', note:"Ticket opened", updates:{ticket:'#T-1042', issue:'Brochure not received', priority:'Normal', status:'Open', assigned:'Support', next:'Verify + resend'}},
+
+          {type:'compose', text:"+971 5X XXX XXXX"},
+          {type:'typing', ms:1500},
+          {type:'ai', text:"Thanks. Resending now — I’ll also attach a backup PDF here."},
+          {type:'crm', note:"Resolved", updates:{status:'Resolved', next:'Confirm delivery'}},
+        ],
+
+        'Event Host': [
+          {type:'compose', text:"Is there a property show this weekend?"},
+          {type:'typing', ms:1400},
+          {type:'ai', text:"Yes. How many guests will you be bringing?"},
+          {type:'crm', note:"RSVP created", updates:{guest:'New Guest', count:'—', event:'Property Show', status:'Invited', next:'Guest count + slot'}},
+
+          {type:'compose', text:"2 guests."},
+          {type:'typing', ms:1600},
+          {type:'ai', text:"Perfect. Afternoon or evening slot?"},
+          {type:'crm', note:"Guest count captured", updates:{count:'2', status:'Pending slot', next:'Confirm time slot'}},
+
+          {type:'compose', text:"Evening."},
+          {type:'typing', ms:1700},
+          {type:'ai', text:"Done. I’ll send the location + parking details shortly."},
+          {type:'crm', note:"Confirmed", updates:{slot:'Evening', status:'Confirmed', next:'Send location'}},
+        ],
+
+        'Marketing Coordinator': [
+          {type:'compose', text:"Can you follow up yesterday’s campaign leads?"},
+          {type:'typing', ms:1500},
+          {type:'ai', text:"Absolutely. Do you want a soft check-in or a direct offer message?"},
+          {type:'crm', note:"Workflow started", updates:{campaign:'Meta Lead Gen', source:'Instagram', segment:'Mixed', status:'Drafting', last:'Yesterday', next:'Pick tone'}},
+
+          {type:'compose', text:"Soft check-in."},
+          {type:'typing', ms:1700},
+          {type:'ai', text:"Got it. I’ll send a gentle message with one qualifying question. Which project should I prioritize?"},
+          {type:'crm', note:"Tone set", updates:{status:'In progress', next:'Confirm project'}},
+        ],
+
+        'Mortgage Advisor': [
+          {type:'compose', text:"Can I qualify for a home loan in Dubai?"},
+          {type:'typing', ms:1600},
+          {type:'ai', text:"Let’s check. Are you salaried or self-employed?"},
+          {type:'crm', note:"Case created", updates:{applicant:'New Applicant', profile:'—', income:'—', status:'New', docs:'Pending', next:'Capture profile'}},
+
+          {type:'compose', text:"Salaried."},
+          {type:'typing', ms:1700},
+          {type:'ai', text:"Great. What’s your approximate monthly income?"},
+          {type:'crm', note:"Profile captured", updates:{profile:'Salaried', status:'Qualifying', next:'Capture income'}},
+
+          {type:'compose', text:"Around 35k."},
+          {type:'typing', ms:1600},
+          {type:'ai', text:"Thanks. I’ll estimate eligibility and share the document list for pre-approval."},
+          {type:'crm', note:"Income captured", updates:{income:'AED 35k/mo', docs:'List required', status:'In review', next:'Send document checklist'}},
+        ],
+
+        'Property Concierge': [
+          {type:'compose', text:"We’re relocating to Dubai — can you help shortlist areas?"},
+          {type:'typing', ms:1600},
+          {type:'ai', text:"Of course. Are you prioritizing commute, schools, or lifestyle?"},
+          {type:'crm', note:"Discovery started", updates:{lead:'Relocation Lead', stage:'Discovery', intent:'Relocation', area:'—', next:'Capture priorities'}},
+
+          {type:'compose', text:"Schools and quiet neighborhoods."},
+          {type:'typing', ms:1800},
+          {type:'ai', text:"Perfect. What budget range and how many bedrooms?"},
+          {type:'crm', note:"Priorities captured", updates:{stage:'Qualifying', next:'Budget + bedrooms'}},
+        ],
+
+        'Operations Admin': [
+          {type:'compose', text:"Can you log today’s WhatsApp inquiries into the CRM?"},
+          {type:'typing', ms:1400},
+          {type:'ai', text:"On it. Who should receive Dubai Hills leads?"},
+          {type:'crm', note:"Task created", updates:{task:'Log inquiries', owner:'Ops', rules:'—', status:'In progress', log:'Started', next:'Confirm routing'}},
+
+          {type:'compose', text:"Assign to Nadia."},
+          {type:'typing', ms:1600},
+          {type:'ai', text:"Done. Dubai Hills → Nadia. Auto-routing is active."},
+          {type:'crm', note:"Rules saved", updates:{rules:'Dubai Hills → Nadia', status:'Saved', log:'Routing updated', next:'Auto-route active'}},
+        ],
+
+        'Order Assistant (Shopify)': [
+          {type:'compose', text:"Hi, is the chocolate cookies box available?"},
+          {type:'typing', ms:1400},
+          {type:'ai', text:"Yes 😊 How many boxes would you like?"},
+          {type:'crm', note:"Order started", updates:{order:'#S-2207', items:'Chocolate Cookies (Box)', total:'—', payment:'—', address:'—', status:'New'}},
+
+          {type:'compose', text:"3 boxes."},
+          {type:'typing', ms:1500},
+          {type:'ai', text:"Got it. Delivery area please?"},
+          {type:'crm', note:"Items updated", updates:{items:'Chocolate Cookies ×3', status:'Confirming delivery'}},
+
+          {type:'compose', text:"JLT."},
+          {type:'typing', ms:1600},
+          {type:'ai', text:"Perfect. Total is AED 90 + AED 10 delivery = AED 100. Cash on delivery or card?"},
+          {type:'crm', note:"Total calculated", updates:{total:'AED 100', address:'JLT', status:'Awaiting payment method'}},
+
+          {type:'compose', text:"Cash on delivery."},
+          {type:'typing', ms:1400},
+          {type:'ai', text:"Done 👍 Please share building + apartment number."},
+          {type:'crm', note:"Payment method saved", updates:{payment:'COD', status:'Confirmed'}},
+        ],
+
+        'Restaurant Orders': [
+          {type:'compose', text:"Hi, can I order 2 chicken shawarma and 1 fries?"},
+          {type:'typing', ms:1350},
+          {type:'ai', text:"Sure. Delivery or pickup?"},
+          {type:'crm', note:"Order started", updates:{order:'#F-5112', items:'Chicken Shawarma ×2, Fries ×1', total:'—', payment:'—', address:'—', status:'New'}},
+
+          {type:'compose', text:"Delivery."},
+          {type:'typing', ms:1450},
+          {type:'ai', text:"Got it. Share your area + building, please."},
+          {type:'crm', note:"Delivery captured", updates:{status:'Capturing address'}},
+
+          {type:'compose', text:"Al Barsha, Al Noor Building."},
+          {type:'typing', ms:1500},
+          {type:'ai', text:"Perfect. Total AED 41 + delivery AED 6 = AED 47. Cash or card?"},
+          {type:'crm', note:"Total calculated", updates:{address:'Al Barsha — Al Noor Building', total:'AED 47', status:'Awaiting payment method'}},
+        ],
+
+        'Appointment Booker': [
+          {type:'compose', text:"Hi, I need a haircut appointment tomorrow."},
+          {type:'typing', ms:1400},
+          {type:'ai', text:"Sure. What time works best — morning, afternoon, or evening?"},
+          {type:'crm', note:"Appointment started", updates:{name:'New Client', service:'Haircut', time:'—', status:'Pending time', notes:'Requested tomorrow', next:'Confirm time'}},
+
+          {type:'compose', text:"Evening, around 7."},
+          {type:'typing', ms:1400},
+          {type:'ai', text:"Perfect. I’ll book 7:00 PM and send a confirmation."},
+          {type:'crm', note:"Booked", updates:{time:'Tomorrow 7:00 PM', status:'Confirmed', next:'Send confirmation'}},
+        ],
+
+        'Hotel Booking': [
+          {type:'compose', text:"Hi, do you have a room available for 2 nights next week?"},
+          {type:'typing', ms:1500},
+          {type:'ai', text:"Yes. What dates and how many guests?"},
+          {type:'crm', note:"Booking started", updates:{guest:'New Guest', dates:'—', room:'—', rate:'—', status:'New', next:'Capture dates + guests'}},
+
+          {type:'compose', text:"Mon–Wed, 2 guests."},
+          {type:'typing', ms:1500},
+          {type:'ai', text:"Great. Do you prefer standard or sea-view?"},
+          {type:'crm', note:"Dates captured", updates:{dates:'Mon–Wed (2 nights)', status:'Qualifying', next:'Select room type'}},
+        ],
+      };
+
+      // Reveal rhythm
+      async function transitionToChat(role){
+        setStage('stage-chat');
+        await sleep(240);
+        // light settle
+        await sleep(260);
+        chatRole.textContent = role;
+      }
+
+      async function transitionToCrm(){
+        // softer, delayed switch to feel inevitable
+        await sleep(260);
+        setStage('stage-crm');
+      }
+
+      async function runFlow(role){
+        const token = ++runToken;
+        isFlowActive = true;
+
+        // Set active role button
+        roleButtons.forEach(b=>b.classList.toggle('is-active', b.dataset.role === role));
+
+        // Update hints + mode
+        designerHint.textContent = role;
+        designerFootHint.textContent = 'Simulation running — card focus will follow the conversation.';
+        const mode = ROLE_TO_MODE[role] || 'pipeline';
+        setCrmMode(mode);
+
+        // Reset conversation & CRM values
+        messagesScroll.innerHTML = '';
+        composeInput.textContent = 'Type a message...';
+        setSyncing(false, 'Idle');
+        crmSubtitle.textContent = 'Waiting for lead data...';
+
+        // Move focus to chat
+        await transitionToChat(role);
+
+        const steps = flows[role] || [];
+        let crmStarted = false;
+
+        for(const step of steps){
+          if(token !== runToken) return;
+
+          if(step.type === 'compose'){
+            await typeInCompose(step.text, token);
+            if(token !== runToken) return;
+            addBubble('user', step.text);
+            composeInput.textContent = 'Type a message...';
+            haptic([6]);
+            await sleep(720 + rand(200, 420));
+          }
+
+          if(step.type === 'typing'){
+            showTyping(true);
+            await sleep(step.ms || 1500);
+            showTyping(false);
+            await sleep(220);
+          }
+
+          if(step.type === 'ai'){
+            pulseAiGlow();
+            addBubble('ai', step.text);
+            await sleep(820 + rand(220, 420));
+          }
+
+          if(step.type === 'crm'){
+            if(!crmStarted){
+              crmStarted = true;
+              await transitionToCrm();
+              await sleep(420);
+            }
+            await applyCRMUpdates(step.updates, step.note, token);
+            await sleep(640);
+          }
+        }
+
+        designerFootHint.textContent = 'Ready — switch roles anytime.';
+        isFlowActive = false;
+      }
+
+      // UI events
+      roleButtons.forEach(btn=>{
+        btn.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          const role = btn.dataset.role;
+          haptic([8]);
+          runFlow(role);
+        });
+      });
+
+      resetBtn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        runToken++;
+        isFlowActive = false;
+        resetState();
+        haptic([6]);
+      });
+
+      // Init
+      resetState();
+    })();
+  </script>
+</body>
+</html>
